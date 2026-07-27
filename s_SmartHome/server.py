@@ -14,9 +14,6 @@ signals = {
 latest_sensors_data = ""
 esp_commands = []
 
-# 펫캠 릴레이용 최신 프레임 (base64 JPEG)
-latest_frame = ""
-
 class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         # CORS 허용 설정 (모바일 접속 및 다중 기기 연동 활성화)
@@ -58,15 +55,7 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             return
         elif self.path.startswith("/api/get_signal"):
             # 역할에 따른 상대방의 시그널 데이터 및 Candidate 가져오기
-            # Query parameter 파싱 보완 (타임스탬프 등 다른 파라미터가 있어도 role을 정확히 추출)
-            query = self.path.split("?")[-1]
-            params = {}
-            for part in query.split("&"):
-                if "=" in part:
-                    k, v = part.split("=", 1)
-                    params[k] = v
-            role = params.get("role", "")
-            
+            role = self.path.split("role=")[-1]
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
@@ -98,14 +87,6 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"Reset success")
-        elif self.path.startswith("/api/get_frame"):
-            # 스마트폰이 올린 최신 펫캠 프레임(base64 JPEG) 전달
-            global latest_frame
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.end_headers()
-            self.wfile.write(json.dumps({"frame": latest_frame}).encode('utf-8'))
         else:
             # 기본 정적 파일 서빙
             super().do_GET()
@@ -137,16 +118,6 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-Length', '2')
             self.send_header('Connection', 'close')
-            self.end_headers()
-            self.wfile.write(b"OK")
-            return
-
-        if self.path == "/api/post_frame":
-            # 스마트폰 카메라 프레임(base64 JPEG)을 서버에 저장
-            global latest_frame
-            latest_frame = post_data.decode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
             self.wfile.write(b"OK")
             return
