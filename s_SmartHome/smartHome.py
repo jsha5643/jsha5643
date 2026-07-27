@@ -515,22 +515,37 @@ def connect_wifi():
 # 와이파이 연결 시도
 connect_wifi()
 
-# BLESimplePeripheral을 대체하는 Wi-Fi 버퍼 클래스
-class WiFiBuffer:
+# BLE 모듈 초기화 및 인스턴스 생성
+import ble_library
+import bluetooth
+
+ble = bluetooth.BLE()
+p_ble = ble_library.BLESimplePeripheral(ble, "ESP_Js")
+
+# BLE와 Wi-Fi를 동시에 지원하는 DualBuffer 클래스
+class DualBuffer:
     def __init__(self):
         self.buffer = []
     
     def send(self, data):
+        # 1. 즉시 블루투스(BLE)로 전송
+        try:
+            p_ble.send(data)
+        except Exception as e:
+            print("BLE send error:", e)
+            
+        # 2. 와이파이(HTTP) 전송을 위해 버퍼에 누적
         self.buffer.append(data)
-        print("Buffered to send:", data.strip())
+        print("Buffered for WiFi:", data.strip())
         # 즉시 전송이 필요한 이벤트는 바로 플러시
         if any(event in data for event in ["owner_call", "play_", "snack_"]):
             flush_buffer()
 
     def on_write(self, callback):
-        pass
+        # BLE 수신 콜백 등록
+        p_ble.on_write(callback)
 
-p = WiFiBuffer()
+p = DualBuffer()
 
 def flush_buffer():
     if not p.buffer:
