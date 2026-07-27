@@ -824,7 +824,9 @@
             log('와이파이 제어 서버에 연결하는 중...', 'system');
             try {
                 // 서버에 테스트 요청을 날려 상태를 체크합니다
-                const res = await fetch(`${signalingHost}/api/web/sensors`);
+                const res = await fetch(`${signalingHost}/api/web/sensors`, {
+                    headers: { 'Bypass-Tunnel-Reminder': 'true' }
+                });
                 if (res.status === 200) {
                     log('와이파이 제어 서버에 성공적으로 연동되었습니다!', 'system');
                     connectionMode = 'wifi';
@@ -851,7 +853,9 @@
             if (sensorsInterval) clearInterval(sensorsInterval);
             sensorsInterval = setInterval(async () => {
                 try {
-                    const res = await fetch(`${signalingHost}/api/web/sensors`);
+                    const res = await fetch(`${signalingHost}/api/web/sensors`, {
+                        headers: { 'Bypass-Tunnel-Reminder': 'true' }
+                    });
                     if (res.status === 200) {
                         const dataStr = await res.text();
                         if (dataStr.trim()) {
@@ -940,7 +944,10 @@
                 try {
                     const res = await fetch(`${signalingHost}/api/web/command`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+                        headers: { 
+                            'Content-Type': 'text/plain; charset=utf-8',
+                            'Bypass-Tunnel-Reminder': 'true'
+                        },
                         body: cmdStr
                     });
                     if (res.status === 200) {
@@ -970,7 +977,7 @@
         }
 
         // 화상 통화 (WebRTC & WebCam) 및 실시간 펫캠 기능 구현
-        const signalingHost = "https://5f5e04cc7b1e0b.lhr.life";
+        const signalingHost = "https://fluffy-mirrors-occur.loca.lt";
             
         let myRole = "owner"; // 기본 역할은 주인 노트북
         let localStream = null;
@@ -1009,7 +1016,9 @@
             if (signalingInterval) clearInterval(signalingInterval);
             signalingInterval = setInterval(async () => {
                 try {
-                    const res = await fetch(`${signalingHost}/api/get_signal?role=${myRole}`);
+                    const res = await fetch(`${signalingHost}/api/get_signal?role=${myRole}`, {
+                        headers: { 'Bypass-Tunnel-Reminder': 'true' }
+                    });
                     const data = await res.json();
                     
                     if (data.sdp) {
@@ -1059,7 +1068,10 @@
                     // 생성된 ICE 후보를 서버로 전송
                     await fetch(`${signalingHost}/api/send_candidate`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Bypass-Tunnel-Reminder': 'true'
+                        },
                         body: JSON.stringify({ role: myRole, candidate: event.candidate })
                     });
                 }
@@ -1096,7 +1108,10 @@
                         
                         await fetch(`${signalingHost}/api/send_sdp`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Bypass-Tunnel-Reminder': 'true'
+                            },
                             body: JSON.stringify({ role: myRole, sdp: answer })
                         });
                         
@@ -1156,7 +1171,10 @@
                     
                     await fetch(`${signalingHost}/api/send_sdp`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Bypass-Tunnel-Reminder': 'true'
+                        },
                         body: JSON.stringify({ role: myRole, sdp: offer })
                     });
                     
@@ -1244,7 +1262,10 @@
                 
                 await fetch(`${signalingHost}/api/send_sdp`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Bypass-Tunnel-Reminder': 'true'
+                    },
                     body: JSON.stringify({ role: myRole, sdp: offer })
                 });
                 
@@ -1289,7 +1310,9 @@
             document.getElementById('pet-cam-video').srcObject = null;
             
             try {
-                await fetch(`${signalingHost}/api/reset`);
+                await fetch(`${signalingHost}/api/reset`, {
+                    headers: { 'Bypass-Tunnel-Reminder': 'true' }
+                });
             } catch (e) {}
         }
 
