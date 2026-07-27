@@ -401,6 +401,11 @@
         .terminal-line.system {
             color: #94a3b8; /* Gray for internal logs */
         }
+        .terminal-line.danger {
+            color: #ef4444; /* Red for warning logs */
+            font-weight: bold;
+            animation: pulse-alert 1.5s infinite alternate;
+        }
 
         /* 하단 탭 바 내비게이션 */
         .tab-bar {
@@ -481,6 +486,20 @@
                 <i class="fa-solid fa-wifi"></i> 와이파이 연결
             </button>
         </div>
+    </div>
+
+    <!-- 강아지 모드 대기 화면 -->
+    <div id="dog-waiting-screen" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#0f172a; color:white; flex-direction:column; justify-content:center; align-items:center; gap:24px; padding:20px; z-index:990;">
+        <div style="width:120px; height:120px; border-radius:50%; background:#1e293b; display:flex; justify-content:center; align-items:center; font-size:4rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <i class="fa-solid fa-dog" style="color:#38bdf8;"></i>
+        </div>
+        <h2 style="font-size:1.6rem; font-weight:700;">댕댕이 펫캠 모드</h2>
+        <p style="font-size:0.95rem; color:#94a3b8; text-align:center; max-width:280px; line-height:1.6;">
+            주인의 연결을 기다리고 있습니다.<br>화면을 켜둔 채로 고정해 주세요.
+        </p>
+        <button onclick="setDeviceRole('owner')" style="margin-top:40px; background:rgba(255,255,255,0.08); color:#94a3b8; border:1px solid rgba(255,255,255,0.15); padding:10px 20px; border-radius:14px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+            주인 모드로 전환
+        </button>
     </div>
 
     <!-- 화상 통화 수신/연결 모달 -->
@@ -896,6 +915,7 @@
                 const alertVal = dataStr.split(':')[1].trim();
                 if (alertVal === '1') {
                     sensorCard.classList.add('alert-card');
+                    log("🚨 [경고] 빨간 조명(RGB R)이 켜지고 피에조 경고음이 작동했습니다. 온습도를 점검해 주세요!", "danger");
                 } else {
                     sensorCard.classList.remove('alert-card');
                 }
@@ -999,14 +1019,32 @@
         function setDeviceRole(role) {
             myRole = role;
             document.querySelectorAll('#role-selector .btn').forEach(btn => btn.classList.remove('active'));
+            
+            const appContainer = document.querySelector('.app-container');
+            const tabBar = document.querySelector('.tab-bar');
+            const dogWaitingScreen = document.getElementById('dog-waiting-screen');
+            
             if (role === 'owner') {
                 document.getElementById('btn-role-owner').classList.add('active');
                 log("주인용 노트북 모드로 설정되었습니다.", "system");
+                
+                appContainer.style.display = 'flex';
+                tabBar.style.display = 'flex';
+                if (dogWaitingScreen) dogWaitingScreen.style.display = 'none';
+                
                 stopSignalingPolling();
                 startSignalingPolling();
+                startAutoPetCamLoop();
             } else {
                 document.getElementById('btn-role-dog').classList.add('active');
                 log("강아지용 스마트폰 모드로 설정되었습니다. (폰 고정용)", "system");
+                
+                appContainer.style.display = 'none';
+                tabBar.style.display = 'none';
+                if (dogWaitingScreen) dogWaitingScreen.style.display = 'flex';
+                
+                stopAutoPetCamLoop();
+                resetWebRTC();
                 stopSignalingPolling();
                 startSignalingPolling();
             }
@@ -1159,57 +1197,86 @@
         }
 
         // 펫캠 버튼 작동 (주인이 원격으로 강아지 펫캠 활성화 요청)
-        async function togglePetCam() {
+        let autoPetCamInterval = null;
+
+        function startAutoPetCamLoop() {
+            if (autoPetCamInterval) clearInterval(autoPetCamInterval);
+            
+            autoTriggerPetCam();
+            
+            autoPetCamInterval = setInterval(() => {
+                if (myRole === 'owner' && !pc) {
+                    log("원격 펫캠 자동 연결 재시도 중...", "system");
+                    autoTriggerPetCam();
+                }
+            }, 5000);
+        }
+
+        function stopAutoPetCamLoop() {
+            if (autoPetCamInterval) {
+                clearInterval(autoPetCamInterval);
+                autoPetCamInterval = null;
+            }
+        }
+
+        async function autoTriggerPetCam() {
+            if (pc) return;
+            
             const btn = document.getElementById('btn-toggle-petcam');
             const preview = document.getElementById('pet-cam-preview');
             const placeholder = document.getElementById('pet-cam-placeholder');
             
-            if (pc) {
-                // 이미 연결 상태이면 리셋
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>원격 자동 연결 중...</span>';
+            placeholder.style.display = "none";
+            
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    log("카메라 API를 지원하지 않는 브라우저입니다.", "danger");
+                    btn.className = "btn btn-primary";
+                    btn.innerHTML = '<i class="fa-solid fa-video"></i> <span>실시간 펫캠 켜기</span>';
+                    placeholder.style.display = "flex";
+                    return;
+                }
+                const peer = createPeerConnection();
+                
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user" },
+                    audio: false
+                });
+                localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+                
+                const offer = await peer.createOffer();
+                await peer.setLocalDescription(offer);
+                
+                await fetch(`${signalingHost}/api/send_sdp`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Bypass-Tunnel-Reminder': 'true'
+                    },
+                    body: JSON.stringify({ role: myRole, sdp: offer })
+                });
+                
+                log("강아지 카메라로 펫캠 영상 송출을 요청했습니다. (양방향 자동 연결)", "system");
+                btn.className = "btn btn-danger";
+                btn.innerHTML = '<i class="fa-solid fa-video-slash"></i> <span>실시간 펫캠 끄기</span>';
+            } catch (err) {
+                console.error("Auto Petcam connection error:", err);
                 resetWebRTC();
+            }
+        }
+
+        async function togglePetCam() {
+            if (pc) {
+                stopAutoPetCamLoop();
+                resetWebRTC();
+                
+                const btn = document.getElementById('btn-toggle-petcam');
                 btn.className = "btn btn-primary";
                 btn.innerHTML = '<i class="fa-solid fa-video"></i> <span>실시간 펫캠 켜기</span>';
-                placeholder.style.display = "flex";
-                preview.srcObject = null;
-                log("펫캠 모니터를 종료했습니다.", "system");
+                document.getElementById('pet-cam-placeholder').style.display = "flex";
             } else {
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>펫캠 연결 중...</span>';
-                placeholder.style.display = "none";
-                
-                try {
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        log("카메라 API를 지원하지 않는 브라우저입니다. (HTTP 보안 차단 우회 필요)", "danger");
-                        btn.className = "btn btn-primary";
-                        btn.innerHTML = '<i class="fa-solid fa-video"></i> <span>실시간 펫캠 켜기</span>';
-                        placeholder.style.display = "flex";
-                        return;
-                    }
-                    const peer = createPeerConnection();
-                    
-                    // 노트북 웹캠 활성화 (주인 얼굴 송출용)
-                    localStream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: "user" },
-                        audio: false
-                    });
-                    localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
-                    
-                    const offer = await peer.createOffer();
-                    await peer.setLocalDescription(offer);
-                    
-                    await fetch(`${signalingHost}/api/send_sdp`, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Bypass-Tunnel-Reminder': 'true'
-                        },
-                        body: JSON.stringify({ role: myRole, sdp: offer })
-                    });
-                    
-                    log("강아지 카메라로 펫캠 영상 송출을 요청했습니다. (양방향 연결)", "system");
-                } catch (err) {
-                    console.error("Petcam connection error:", err);
-                    resetWebRTC();
-                }
+                startAutoPetCamLoop();
             }
         }
 
@@ -1351,8 +1418,9 @@
         document.getElementById('btn-call-end').addEventListener('click', endCall);
         document.getElementById('btn-toggle-petcam').addEventListener('click', togglePetCam);
         
-        // 페이지 로딩 시 자동으로 시널링 폴링 시작
+        // 페이지 로딩 시 자동으로 시널링 폴링 및 주인 모드 펫캠 가동 시작
         startSignalingPolling();
+        setDeviceRole('owner');
 
         // 연결 해제 처리
         function disconnect() {
