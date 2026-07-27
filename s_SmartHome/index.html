@@ -486,7 +486,7 @@
     <!-- 화상 통화 수신/연결 모달 -->
     <div id="pet-call-modal" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.95); backdrop-filter:blur(20px); z-index:9999; display:none; flex-direction:column; justify-content:center; align-items:center; gap:28px; color:white; padding:24px; transition: all 0.3s ease;">
         <!-- 발신 프로필 -->
-        <div style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <div id="caller-profile-area" style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px;">
             <div style="width:100px; height:100px; border-radius:50%; background:#3b82f6; display:flex; justify-content:center; align-items:center; font-size:3rem; box-shadow:0 0 25px rgba(59,130,246,0.6); animation: pulse-blue 1.5s infinite alternate;">
                 <i class="fa-solid fa-dog"></i>
             </div>
@@ -1131,6 +1131,7 @@
                         
                         // 강아지 액정 화면에 통화 모달 팝업 가동
                         document.getElementById('pet-call-modal').style.display = 'flex';
+                        document.getElementById('caller-profile-area').style.display = 'none';
                         document.getElementById('video-call-container').style.display = 'block';
                         document.getElementById('call-status-label').textContent = "주인과 연결되었습니다!";
                         document.getElementById('btn-call-accept').style.display = 'none'; // 강아지 화면에선 수락버튼 필요없음
@@ -1295,6 +1296,7 @@
                     body: JSON.stringify({ role: myRole, sdp: offer })
                 });
                 
+                document.getElementById('caller-profile-area').style.display = "none";
                 videoContainer.style.display = "block";
                 statusLabel.textContent = "댕댕이와 통화 중!";
                 acceptBtn.style.display = "none";
@@ -1335,6 +1337,7 @@
             
             document.getElementById('pet-cam-preview').srcObject = null;
             document.getElementById('pet-cam-video').srcObject = null;
+            document.getElementById('caller-profile-area').style.display = "flex";
             
             try {
                 await fetch(`${signalingHost}/api/reset`, {
