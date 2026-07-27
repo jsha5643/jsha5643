@@ -970,9 +970,9 @@
         }
 
         // 화상 통화 (WebRTC & WebCam) 및 실시간 펫캠 기능 구현
-        const signalingHost = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") 
-            ? "" 
-            : "http://192.168.0.4:8000"; // 외부 호스팅(GitHub Pages 등) 시 로컬 노트북 서버로 API 전달
+        const signalingHost = (window.location.hostname.includes("github.io")) 
+            ? "http://192.168.0.4:8000" 
+            : ""; // 외부 호스팅(GitHub Pages 등) 시 로컬 노트북 서버로 API 전달
             
         let myRole = "owner"; // 기본 역할은 주인 노트북
         let localStream = null;
