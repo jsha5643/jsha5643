@@ -1,890 +1,1277 @@
 <!DOCTYPE html>
-<html class="dark" lang="ko">
+<html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>준석의 스마트홈 대시보드</title>
-  
-  <!-- CDNs for Tailwind CSS and Icons -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>준석의 스마트홈 대시보드</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* 화상통화 비디오 프레임 */
+        #video-call-container {
+            width: 100%;
+            height: 240px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #0f172a;
+            box-shadow: inset 4px 4px 10px #020617;
+            position: relative;
+            display: none;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        #pet-cam-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* 셀카 좌우 반전 */
+        }
 
-  <!-- Tailwind Configuration -->
-  <script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          "colors": {
-            "inverse-surface": "#dae2fd",
-            "tertiary-container": "#00a572",
-            "surface-bright": "#31394d",
-            "error-container": "#93000a",
-            "outline": "#8c909f",
-            "glass-surface": "rgba(15, 23, 42, 0.75)",
-            "glass-border": "rgba(255, 255, 255, 0.1)",
-            "on-tertiary": "#003824",
-            "secondary": "#bcc7de",
-            "surface-container-highest": "#2d3449",
-            "surface": "#0b1326",
-            "on-error": "#690005",
-            "error": "#ffb4ab",
-            "on-tertiary-fixed": "#002113",
-            "primary-container": "#4d8eff",
-            "primary": "#adc6ff",
-            "primary-fixed": "#d8e2ff",
-            "primary-fixed-dim": "#adc6ff",
-            "secondary-fixed-dim": "#bcc7de",
-            "outline-variant": "#424754",
-            "on-primary-container": "#00285d",
-            "on-tertiary-container": "#00311f",
-            "on-secondary-container": "#aeb9d0",
-            "surface-container-lowest": "#060e20",
-            "surface-container-high": "#222a3d",
-            "secondary-fixed": "#d8e3fb",
-            "tertiary": "#4edea3",
-            "secondary-container": "#3e495d",
-            "tertiary-fixed-dim": "#4edea3",
-            "on-secondary": "#263143",
-            "on-secondary-fixed": "#111c2d",
-            "on-surface": "#dae2fd",
-            "status-warning": "#F59E0B",
-            "on-error-container": "#ffdad6",
-            "on-secondary-fixed-variant": "#3c475a",
-            "surface-tint": "#adc6ff",
-            "status-error": "#EF4444",
-            "surface-container-low": "#131b2e",
-            "on-primary": "#002e6a",
-            "inverse-on-surface": "#283044",
-            "inverse-primary": "#005ac2",
-            "surface-container": "#171f33",
-            "on-primary-fixed-variant": "#004395",
-            "surface-variant": "#2d3449",
-            "background": "#0b1326",
-            "on-background": "#dae2fd",
-            "on-surface-variant": "#c2c6d6",
-            "on-primary-fixed": "#001a42",
-            "surface-dim": "#0b1326",
-            "on-tertiary-fixed-variant": "#005236",
-            "tertiary-fixed": "#6ffbbe",
-            "status-online": "#10B981"
-          },
-          "borderRadius": {
-            "DEFAULT": "0.25rem",
-            "lg": "0.5rem",
-            "xl": "0.75rem",
-            "full": "9999px"
-          },
-          "spacing": {
-            "gutter": "12px",
-            "card-padding": "20px",
-            "base": "4px",
-            "margin-mobile": "16px",
-            "container-max": "480px"
-          },
-          "fontFamily": {
-            "headline-md": ["Plus Jakarta Sans"],
-            "label-caps": ["JetBrains Mono"],
-            "headline-lg": ["Plus Jakarta Sans"],
-            "data-display": ["JetBrains Mono"],
-            "body-sm": ["Plus Jakarta Sans"],
-            "body-lg": ["Plus Jakarta Sans"]
-          },
-          "fontSize": {
-            "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-            "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
-            "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-            "data-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.05em", "fontWeight": "600"}],
-            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
-          }
-        },
-      },
-    }
-  </script>
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); }
+            100% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+        }
 
-  <style>
-    body {
-      background-color: #0b1326;
-      color: #dae2fd;
-      -webkit-tap-highlight-color: transparent;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    .glass-card {
-      background: rgba(30, 41, 59, 0.4);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      transition: all 0.3s ease;
-    }
-    .glass-card:hover {
-      border-color: rgba(255, 255, 255, 0.18);
-    }
-    .active-glow {
-      box-shadow: 0 0 20px rgba(173, 198, 255, 0.25);
-    }
-    .terminal-scroll::-webkit-scrollbar {
-      width: 4px;
-    }
-    .terminal-scroll::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-    }
-    @keyframes pulse-connection {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.05); opacity: 0.85; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    .animate-pulse-slow {
-      animation: pulse-connection 3s infinite ease-in-out;
-    }
-    .tab-section {
-      display: none;
-    }
-    .tab-section.active {
-      display: block;
-      animation: fadeIn 0.3s ease-out forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .terminal-line.sys { color: #8c909f; }
-    .terminal-line.tx { color: #adc6ff; }
-    .terminal-line.rx { color: #4edea3; }
-    .terminal-line.err { color: #ffb4ab; }
-  </style>
+        :root {
+            /* Ambient Harmony Theme (Blue Variant) */
+            --bg-color: #e2e8f0;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --danger: #ef4444;
+            --success: #10b981;
+            
+            /* Neumorphic Shadows */
+            --shadow-out: 8px 8px 16px #cbd5e1, -8px -8px 16px #ffffff;
+            --shadow-in: inset 6px 6px 12px #cbd5e1, inset -6px -6px 12px #ffffff;
+            --shadow-btn-hover: 4px 4px 8px #cbd5e1, -4px -4px 8px #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-bottom: 80px; /* Tab Bar 공간 */
+        }
+
+        /* 모바일 최적화 컨테이너 */
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* 헤더 영역 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 5px;
+        }
+
+        header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-color);
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: var(--shadow-out);
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.disconnected {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .status-badge.connected {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+            box-shadow: var(--shadow-in);
+        }
+
+        .status-badge i {
+            font-size: 0.65rem;
+        }
+
+        /* 네오모피즘 카드 공통 */
+        .card {
+            background-color: var(--bg-color);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: var(--shadow-out);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 연결 오버레이 */
+        #connection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(226, 232, 240, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #connection-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .overlay-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-out);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .overlay-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        .overlay-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+            max-width: 280px;
+            line-height: 1.5;
+        }
+
+        /* 센서 모니터 카드 */
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .sensor-item {
+            background-color: var(--bg-color);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: var(--shadow-in);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .sensor-item.full-width {
+            grid-column: span 2;
+        }
+
+        .sensor-icon {
+            font-size: 1.3rem;
+            color: var(--primary);
+        }
+
+        .sensor-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .sensor-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .sensor-value span {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: 2px;
+        }
+
+        /* 환경 경보 스타일 */
+        .alert-card {
+            border: 2px solid var(--danger);
+            animation: pulse-alert 2.0s infinite alternate;
+        }
+
+        @keyframes pulse-alert {
+            0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+            100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+        }
+
+        /* 제어 버튼 스타일 */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 16px;
+            border: none;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow-out);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        .btn:active, .btn.active {
+            box-shadow: var(--shadow-in);
+            transform: scale(0.97);
+            color: var(--primary);
+        }
+
+        .btn.btn-primary {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .btn.btn-danger {
+            color: var(--danger);
+        }
+
+        .btn.btn-success {
+            color: var(--success);
+        }
+
+        /* 급식 타이머 전용 */
+        .feeding-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 0;
+        }
+
+        .timer-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: 1px 1px 0px #fff;
+        }
+
+        .timer-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* 놀이기구 카운터 패널 */
+        .play-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .play-card {
+            background-color: var(--bg-color);
+            border-radius: 18px;
+            padding: 12px;
+            box-shadow: var(--shadow-out);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            text-align: center;
+        }
+
+        .play-card-header {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .play-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .play-btn {
+            width: 100%;
+            padding: 8px;
+            font-size: 0.75rem;
+            border-radius: 10px;
+        }
+
+        /* 터미널 패널 */
+        .terminal-panel {
+            background: #1e293b;
+            color: #38bdf8;
+            border-radius: 18px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            height: 120px;
+            overflow-y: auto;
+            box-shadow: inset 4px 4px 8px #0f172a, inset -4px -4px 8px #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .terminal-line {
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .terminal-line.tx {
+            color: #34d399; /* Green for sent commands */
+        }
+
+        .terminal-line.rx {
+            color: #38bdf8; /* Blue for received data */
+        }
+
+        .terminal-line.system {
+            color: #94a3b8; /* Gray for internal logs */
+        }
+
+        /* 하단 탭 바 내비게이션 */
+        .tab-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 420px;
+            height: 64px;
+            background: rgba(226, 232, 240, 0.8);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            box-shadow: var(--shadow-out);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 900;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 60px;
+            height: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .tab-item.active {
+            color: var(--primary);
+        }
+
+        .tab-item i {
+            font-size: 1.2rem;
+            transition: transform 0.2s ease;
+        }
+
+        .tab-item:active i {
+            transform: scale(0.85);
+        }
+
+        /* 탭별 콘텐츠 스위칭 */
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+    </style>
 </head>
+<body>
 
-<body class="min-h-screen flex flex-col items-center pb-32">
-
-  <!-- TopAppBar -->
-  <header class="fixed top-0 w-full z-50 bg-glass-surface backdrop-blur-md border-b border-glass-border">
-    <div class="flex justify-between items-center px-margin-mobile h-16 max-w-container-max mx-auto">
-      <div class="flex items-center gap-3">
-        <span class="material-symbols-outlined text-primary font-bold">settings_remote</span>
-        <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">준석의 스마트홈</h1>
-      </div>
-      <button class="p-2 rounded-full hover:opacity-85 transition-opacity active:scale-95 duration-100 flex items-center gap-2" id="bt-status" onclick="connectBLE()">
-        <span class="material-symbols-outlined text-on-surface-variant" id="bt-icon">bluetooth_searching</span>
-        <span class="hidden md:block font-label-caps text-label-caps text-on-surface-variant" id="bt-label">DISCONNECTED</span>
-      </button>
+    <!-- 블루투스 연결 대기 화면 (첫 실행 시 강제 표시) -->
+    <div id="connection-overlay">
+        <div class="overlay-logo">
+            <i class="fa-solid fa-house-laptop"></i>
+        </div>
+        <div class="overlay-title">준석의 스마트홈</div>
+        <div class="overlay-desc">스마트독 스위트 시스템을 블루투스로 연동해 안전하고 쾌적하게 펫 호텔을 관리하세요.</div>
+        <button id="connect-btn" class="btn btn-primary" style="width: 200px; padding: 16px 20px; border-radius: 20px; font-size: 1rem;">
+            <i class="fa-solid fa-bluetooth"></i> 블루투스 연결
+        </button>
     </div>
-  </header>
 
-  <!-- Main Canvas -->
-  <main class="w-full max-w-container-max px-margin-mobile pt-24 flex-grow overflow-y-auto">
-
-    <!-- 1. 대시보드 탭 섹션 -->
-    <section id="dashboard-section" class="tab-section active">
-      <!-- Environmental Sensors -->
-      <div class="mb-8">
-        <div class="flex justify-between items-end mb-4">
-          <h2 class="font-label-caps text-label-caps text-on-surface-variant opacity-60">ENVIRONMENTAL SENSORS</h2>
-          <button class="text-primary hover:opacity-75 flex items-center gap-1 active:scale-90 transition-transform" onclick="syncAllSensors()">
-            <span class="material-symbols-outlined text-[18px]">refresh</span>
-            <span class="font-label-caps text-label-caps">SYNC ALL</span>
-          </button>
+    <!-- 화상 통화 수신/연결 모달 -->
+    <div id="pet-call-modal" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.95); backdrop-filter:blur(20px); z-index:9999; display:none; flex-direction:column; justify-content:center; align-items:center; gap:28px; color:white; padding:24px; transition: all 0.3s ease;">
+        <!-- 발신 프로필 -->
+        <div style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px;">
+            <div style="width:100px; height:100px; border-radius:50%; background:#3b82f6; display:flex; justify-content:center; align-items:center; font-size:3rem; box-shadow:0 0 25px rgba(59,130,246,0.6); animation: pulse-blue 1.5s infinite alternate;">
+                <i class="fa-solid fa-dog"></i>
+            </div>
+            <h2 style="font-size:1.5rem; margin-top:8px; font-weight: 700;">준석의 댕댕이 📞</h2>
+            <p id="call-status-label" style="font-size:0.9rem; color:#94a3b8; font-weight:500;">화상 통화 요청 중...</p>
         </div>
-        
-        <div class="grid grid-cols-2 gap-gutter">
-          <!-- Temperature Card -->
-          <div class="glass-card p-card-padding rounded-xl relative overflow-hidden">
-            <div class="flex justify-between items-start mb-4">
-              <span class="material-symbols-outlined text-primary">device_thermostat</span>
-              <button class="text-on-surface-variant hover:text-primary transition-colors" onclick="sendCommand('1')">
-                <span class="material-symbols-outlined text-[16px]">refresh</span>
-              </button>
-            </div>
-            <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">TEMP</p>
-            <div class="flex items-baseline gap-1">
-              <span class="font-data-display text-data-display text-primary" id="temp-value">--</span>
-              <span class="font-headline-md text-headline-md text-on-surface-variant">°C</span>
-            </div>
-            <div class="mt-4 w-full h-1 bg-surface-variant rounded-full overflow-hidden">
-              <div class="h-full bg-primary transition-all duration-500 w-0" id="temp-progress"></div>
-            </div>
-          </div>
 
-          <!-- Humidity Card -->
-          <div class="glass-card p-card-padding rounded-xl">
-            <div class="flex justify-between items-start mb-4">
-              <span class="material-symbols-outlined text-tertiary">humidity_percentage</span>
-              <button class="text-on-surface-variant hover:text-tertiary transition-colors" onclick="sendCommand('1')">
-                <span class="material-symbols-outlined text-[16px]">refresh</span>
-              </button>
+        <!-- 실시간 비디오 화면 -->
+        <div id="video-call-container">
+            <video id="pet-cam-video" autoplay playsinline muted></video>
+            <div style="position:absolute; bottom:12px; left:12px; background:rgba(239,68,68,0.85); padding:6px 12px; border-radius:8px; font-size:0.75rem; color:white; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-circle fa-fade"></i> LIVE PET-CAM
             </div>
-            <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">HUMIDITY</p>
-            <div class="flex items-baseline gap-1">
-              <span class="font-data-display text-data-display text-tertiary" id="humi-value">--</span>
-              <span class="font-headline-md text-headline-md text-on-surface-variant">%</span>
-            </div>
-            <div class="mt-4 w-full h-1 bg-surface-variant rounded-full overflow-hidden">
-              <div class="h-full bg-tertiary transition-all duration-500 w-0" id="humi-progress"></div>
-            </div>
-          </div>
-
-          <!-- Light Level Card -->
-          <div class="glass-card p-card-padding rounded-xl col-span-2">
-            <div class="flex justify-between items-start mb-2">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-status-warning">light_mode</span>
-                <p class="font-label-caps text-label-caps text-on-surface-variant">LUX INTENSITY (ADC)</p>
-              </div>
-              <button class="text-on-surface-variant hover:text-status-warning transition-colors" onclick="sendCommand('2')">
-                <span class="material-symbols-outlined text-[16px]">refresh</span>
-              </button>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="font-data-display text-data-display text-status-warning" id="cds-value">--</span>
-              <div class="flex-grow mx-4 h-2 bg-surface-variant rounded-full overflow-hidden">
-                <div class="h-full bg-status-warning transition-all duration-500 w-0" id="cds-progress" style="box-shadow: 0 0 10px rgba(245, 158, 11, 0.4)"></div>
-              </div>
-            </div>
-            <p class="text-[12px] text-on-surface-variant/70 mt-2 font-body-sm" id="cds-status">대기 중...</p>
-          </div>
         </div>
-      </div>
 
-      <!-- Quick Action Controls -->
-      <div class="mb-8">
-        <h2 class="font-label-caps text-label-caps text-on-surface-variant opacity-60 mb-4 tracking-wider">QUICK ACTUATORS</h2>
-        <div class="grid grid-cols-1 gap-gutter">
-          <!-- Sound System Card -->
-          <div class="glass-card p-card-padding rounded-xl">
-            <div class="flex items-center gap-2 mb-4">
-              <span class="material-symbols-outlined text-secondary">music_note</span>
-              <p class="font-label-caps text-label-caps text-on-surface-variant">SOUND SYSTEM</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <button class="group flex flex-col items-center gap-2 py-5 rounded-xl border border-glass-border hover:bg-secondary/10 transition-all active:scale-95" onclick="sendCommand('5')">
-                <span class="material-symbols-outlined text-secondary text-[28px] group-hover:scale-110 transition-transform">volume_up</span>
-                <span class="font-label-caps text-label-caps text-secondary">학교종 (5)</span>
-              </button>
-              <button class="group flex flex-col items-center gap-2 py-5 rounded-xl border border-glass-border hover:bg-secondary/10 transition-all active:scale-95" onclick="sendCommand('6')">
-                <span class="material-symbols-outlined text-secondary text-[28px] group-hover:scale-110 transition-transform">library_music</span>
-                <span class="font-label-caps text-label-caps text-secondary">작은별 (6)</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- OLED Display Card -->
-          <div class="glass-card p-card-padding rounded-xl flex justify-between items-center">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-tertiary-container/20 flex items-center justify-center border border-tertiary/20">
-                <span class="material-symbols-outlined text-tertiary">photo</span>
-              </div>
-              <div>
-                <p class="font-headline-md text-[16px] text-on-surface leading-tight">OLED Character Image</p>
-                <p class="font-body-sm text-[12px] text-on-surface-variant opacity-70">Draw img/4.pbm to SSD1306</p>
-              </div>
-            </div>
-            <button class="px-5 py-3 bg-tertiary-container text-on-tertiary-container rounded-lg font-label-caps text-label-caps hover:brightness-110 active:scale-95 transition-all flex items-center gap-1" onclick="sendCommand('9')">
-              <span class="material-symbols-outlined text-[16px]">send</span>
-              <span>PUSH (9)</span>
+        <!-- 통화 버튼 제어부 -->
+        <div style="display:flex; gap:36px; justify-content:center; width:100%; max-width:320px;">
+            <!-- 수락 버튼 (수신 시에만 노출) -->
+            <button id="btn-call-accept" class="btn" style="background:#10b981; color:white; border-radius:50%; width:64px; height:64px; font-size:1.6rem; flex:none; box-shadow:0 8px 20px rgba(16,185,129,0.4); border:none; cursor:pointer;">
+                <i class="fa-solid fa-phone"></i>
             </button>
-          </div>
+            <!-- 거절/종료 버튼 (항상 노출) -->
+            <button id="btn-call-end" class="btn" style="background:#ef4444; color:white; border-radius:50%; width:64px; height:64px; font-size:1.6rem; flex:none; box-shadow:0 8px 20px rgba(239,68,68,0.4); border:none; cursor:pointer;">
+                <i class="fa-solid fa-phone-slash"></i>
+            </button>
         </div>
-      </div>
-    </section>
+    </div>
 
-    <!-- 2. 기기 제어 탭 섹션 -->
-    <section id="devices-section" class="tab-section">
-      <div class="mb-8">
-        <h2 class="font-headline-md text-headline-md text-on-surface mb-1">Hardware Ecosystem</h2>
-        <p class="font-body-sm text-body-sm text-on-surface-variant mb-6">Manage all connected IoT modules in real-time.</p>
+    <!-- 메인 앱 전체 틀 -->
+    <div class="app-container">
         
-        <div class="grid grid-cols-2 gap-gutter">
-          <!-- RGB LED - Bento Controller -->
-          <div class="col-span-2 glass-card rounded-xl p-card-padding flex flex-col justify-between min-h-[150px] relative overflow-hidden group">
-            <div class="absolute -right-8 -top-8 w-32 h-32 bg-primary/10 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-            <div class="flex justify-between items-start z-10">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30 transition-all" id="led-indicator-bg">
-                  <span class="material-symbols-outlined text-on-surface-variant transition-colors" id="led-indicator-icon" style="font-variation-settings: 'FILL' 0;">lightbulb</span>
+        <!-- 상단 헤더 -->
+        <header>
+            <h1>준석의 스마트홈</h1>
+            <div id="header-status" class="status-badge disconnected">
+                <i class="fa-solid fa-circle"></i> <span>연결 안됨</span>
+            </div>
+        </header>
+
+        <!-- 기기 역할 모드 선택 바 -->
+        <div id="role-selector" style="display:flex; gap:10px; width:100%; box-shadow:var(--shadow-in); padding:6px; border-radius:16px; margin-bottom: 10px;">
+            <button id="btn-role-owner" class="btn active" style="font-size:0.75rem; padding:10px;" onclick="setDeviceRole('owner')">
+                <i class="fa-solid fa-user-tie"></i> 주인용 노트북
+            </button>
+            <button id="btn-role-dog" class="btn" style="font-size:0.75rem; padding:10px;" onclick="setDeviceRole('dog')">
+                <i class="fa-solid fa-dog"></i> 강아지용 스마트폰
+            </button>
+        </div>
+
+        <!-- [탭 1] 홈 및 센서 모니터링 -->
+        <div id="tab-home" class="tab-content active">
+            <!-- 환경 센서 모니터링 카드 -->
+            <div class="card" id="sensor-card">
+                <div class="card-title">
+                    <span>실내 환경 모니터</span>
+                    <button id="btn-refresh-sensors" class="btn" style="box-shadow: none; width: 30px; height: 30px; border-radius: 50%; padding: 0;">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
                 </div>
-                <div>
-                  <h3 class="font-headline-md text-headline-md leading-tight">RGB Lighting</h3>
-                  <p class="font-label-caps text-label-caps text-on-surface-variant opacity-50" id="led-indicator-status">OFF</p>
+                
+                <div class="sensor-grid">
+                    <div class="sensor-item">
+                        <i class="fa-solid fa-temperature-half sensor-icon" style="color: #f97316;"></i>
+                        <span class="sensor-label">실내 온도</span>
+                        <div id="val-temp" class="sensor-value">--<span>°C</span></div>
+                    </div>
+                    <div class="sensor-item">
+                        <i class="fa-solid fa-droplet sensor-icon" style="color: #06b6d4;"></i>
+                        <span class="sensor-label">실내 습도</span>
+                        <div id="val-humi" class="sensor-value">--<span>%</span></div>
+                    </div>
+                    <div class="sensor-item full-width">
+                        <i class="fa-solid fa-sun sensor-icon" style="color: #eab308;"></i>
+                        <span class="sensor-label">주변 밝기 (조도)</span>
+                        <div id="val-cds" class="sensor-value">--<span>Lux</span></div>
+                    </div>
                 </div>
-              </div>
-              <button class="material-symbols-outlined text-on-surface-variant/50 hover:text-primary transition-colors" onclick="syncAllSensors()">refresh</button>
+            </div>
+
+            <!-- 자동 급식기 타이머 카드 -->
+            <div class="card">
+                <div class="card-title">자동 급식기 제어</div>
+                <div class="feeding-panel">
+                    <div class="timer-label"><i class="fa-regular fa-clock"></i> 다음 자동 급식까지</div>
+                    <div id="val-timer" class="timer-display">--:--:--</div>
+                </div>
+                <button id="btn-feed-now" class="btn btn-success">
+                    <i class="fa-solid fa-cookie-bite"></i> 즉시 사료 급여
+                </button>
+            </div>
+
+            <!-- 실시간 펫-캠 모니터 카드 (스마트폰 후면 카메라를 펫캠으로 모사) -->
+            <div class="card">
+                <div class="card-title">실시간 펫-캠 모니터</div>
+                <div id="pet-cam-preview-container" style="width: 100%; height: 200px; border-radius: 18px; overflow: hidden; background: #0f172a; position: relative; box-shadow: var(--shadow-in); border: 1px solid rgba(255,255,255,0.1);">
+                    <video id="pet-cam-preview" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    <div id="pet-cam-placeholder" style="position: absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#64748b; gap:8px; font-size:0.85rem; font-weight:600;">
+                        <i class="fa-solid fa-video-slash" style="font-size:2.2rem; color: #475569;"></i>
+                        <span>펫캠이 꺼져 있습니다.</span>
+                    </div>
+                </div>
+                <button id="btn-toggle-petcam" class="btn btn-primary" style="width: 100%;">
+                    <i class="fa-solid fa-video"></i> <span>실시간 펫캠 켜기</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- [탭 2] 조명 & 액추에이터 제어 -->
+        <div id="tab-controls" class="tab-content">
+            <!-- 스마트 조명 제어 카드 -->
+            <div class="card">
+                <div class="card-title">조명 제어</div>
+                <div class="control-group">
+                    <div class="control-row">
+                        <button id="btn-light-auto" class="btn active">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 조명 자동 모드
+                        </button>
+                    </div>
+                    <div class="control-row">
+                        <button id="btn-light-on" class="btn">
+                            <i class="fa-regular fa-lightbulb"></i> 수동 켜기
+                        </button>
+                        <button id="btn-light-off" class="btn">
+                            <i class="fa-solid fa-lightbulb"></i> 수동 끄기
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LCD / 디스플레이 제어 카드 -->
+            <div class="card">
+                <div class="card-title">디스플레이 및 멜로디 제어</div>
+                <div class="control-group">
+                    <div class="control-row">
+                        <button id="btn-lcd-on" class="btn"><i class="fa-solid fa-tv"></i> LCD 켜기</button>
+                        <button id="btn-lcd-off" class="btn"><i class="fa-solid fa-tv"></i> LCD 끄기</button>
+                    </div>
+                    <div class="control-row">
+                        <button id="btn-melody-1" class="btn"><i class="fa-solid fa-music"></i> 멜로디 1</button>
+                        <button id="btn-melody-2" class="btn"><i class="fa-solid fa-music"></i> 멜로디 2</button>
+                    </div>
+                    <div class="control-row">
+                        <button id="btn-oled-img" class="btn btn-primary" style="flex: 1;">
+                            <i class="fa-regular fa-image"></i> OLED 캐릭터 출력
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- [탭 3] 놀이기구 및 로그 확인 -->
+        <div id="tab-play" class="tab-content">
+            <!-- 놀이기구 가동 카드 -->
+            <div class="card">
+                <div class="card-title">놀이기구 가동 현황</div>
+                <div class="play-grid">
+                    <div class="play-card">
+                        <span class="play-card-header">🧸 멜로디 인형</span>
+                        <div id="count-play1" class="play-count">0</div>
+                        <button id="btn-play-1" class="btn play-btn">원격 가동</button>
+                    </div>
+                    <div class="play-card">
+                        <span class="play-card-header">🚨 자동 레이저</span>
+                        <div id="count-play2" class="play-count">0</div>
+                        <button id="btn-play-2" class="btn play-btn">원격 가동</button>
+                    </div>
+                    <div class="play-card">
+                        <span class="play-card-header">🥎 삑삑이 공</span>
+                        <div id="count-play3" class="play-count">0</div>
+                        <button id="btn-play-3" class="btn play-btn">원격 가동</button>
+                    </div>
+                    <div class="play-card">
+                        <span class="play-card-header">🍭 뚝딱이 인형</span>
+                        <div id="count-play4" class="play-count">0</div>
+                        <button id="btn-play-4" class="btn play-btn">원격 가동</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 디버깅 통신 로그 터미널 -->
+            <div class="card">
+                <div class="card-title">디바이스 데이터 로그</div>
+                <div id="terminal" class="terminal-panel">
+                    <div class="terminal-line system">연결 대기 중...</div>
+                </div>
             </div>
             
-            <div class="mt-6 flex items-center justify-between z-10">
-              <div class="flex gap-2">
-                <div class="w-6 h-6 rounded-full border-2 border-white bg-red-500 cursor-pointer" onclick="setLed(true)"></div>
-                <div class="w-6 h-6 rounded-full bg-blue-500 cursor-pointer" onclick="setLed(true)"></div>
-                <div class="w-6 h-6 rounded-full bg-green-500 cursor-pointer" onclick="setLed(true)"></div>
-              </div>
-              <div class="flex gap-1">
-                <button class="px-4 py-2 bg-primary-container text-on-primary-container rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform" id="btn-led-on" onclick="setLed(true)">ON</button>
-                <button class="px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform border border-glass-border" id="btn-led-off" onclick="setLed(false)">OFF</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- LCD Backlight Switch -->
-          <div class="col-span-2 glass-card rounded-xl p-card-padding flex flex-col justify-between">
-            <div class="flex justify-between items-center mb-4">
-              <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-primary">screenshot_monitor</span>
-                <h4 class="font-label-caps text-label-caps uppercase">LCD Backlight (TV)</h4>
-              </div>
-              <span class="font-label-caps text-[10px] text-on-surface-variant px-2 py-0.5 bg-surface-container rounded border border-glass-border">16x2 I2C</span>
-            </div>
-            <div class="bg-surface-container-lowest/80 border border-glass-border p-4 rounded-lg font-data-display text-lg text-primary/80 tracking-widest text-center shadow-inner font-mono min-h-[58px]" id="lcd-preview-text">
-              TEMP & HUMIDITY...<br/>SYSTEM LIVE
-            </div>
-            <div class="mt-4 flex gap-2 justify-end">
-              <button class="px-4 py-2 border border-primary/30 text-primary bg-primary/10 rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform" id="btn-lcd-on" onclick="setLcd(true)">ENABLE (3)</button>
-              <button class="px-4 py-2 border border-glass-border text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform" id="btn-lcd-off" onclick="setLcd(false)">DISABLE (4)</button>
-            </div>
-          </div>
-
-          <!-- SG90 Servo - Ambient Monitor -->
-          <div class="glass-card rounded-xl p-card-padding flex flex-col gap-4">
-            <div class="flex justify-between items-center">
-              <span class="material-symbols-outlined text-secondary">rotate_right</span>
-              <h4 class="font-label-caps text-label-caps text-on-surface-variant">SERVO MOTOR</h4>
-            </div>
-            <div class="text-center mt-2">
-              <div class="font-data-display text-2xl text-on-surface" id="servo-display-angle">90°</div>
-              <p class="text-[11px] text-on-surface-variant/60 font-body-sm mt-1">CdS 조도 자동 연동<br>(밝을 때 90° / 어두울 때 180°)</p>
-            </div>
-          </div>
-
-          <!-- Piezo Test Buzzer -->
-          <div class="glass-card rounded-xl p-card-padding flex flex-col justify-between">
-            <div class="flex justify-between items-center">
-              <span class="material-symbols-outlined text-error">campaign</span>
-              <h4 class="font-label-caps text-label-caps text-on-surface-variant">BUZZER</h4>
-            </div>
-            <div class="flex flex-col gap-2 mt-4">
-              <button class="w-full py-3 bg-error-container/20 border border-error/20 rounded-lg text-error font-label-caps text-label-caps hover:bg-error-container/40 active:scale-95 transition-all" onclick="sendCommand('5')">
-                학교종 연주
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. 통신 로그 탭 섹션 -->
-    <section id="log-section" class="tab-section">
-      <div class="mt-2 mb-4 flex justify-between items-end">
-        <div>
-          <p class="font-label-caps text-label-caps text-primary uppercase">Developer Tools</p>
-          <h2 class="font-headline-md text-headline-md text-on-surface">BLE Serial Terminal</h2>
-        </div>
-        <button class="flex items-center gap-1 font-label-caps text-[10px] text-on-surface-variant border border-glass-border px-2 py-1 rounded hover:bg-surface-variant transition-colors" onclick="clearLogs()">
-          <span class="material-symbols-outlined text-[14px]">delete_sweep</span>
-          CLEAR
-        </button>
-      </div>
-
-      <!-- Terminal Panel -->
-      <div class="bg-surface-container-lowest/80 rounded-xl border border-glass-border shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col min-h-[350px]">
-        <!-- Terminal Header -->
-        <div class="flex items-center justify-between px-4 py-2 border-b border-glass-border bg-surface-container-low/50">
-          <div class="flex gap-1.5">
-            <div class="w-2.5 h-2.5 rounded-full bg-error/50"></div>
-            <div class="w-2.5 h-2.5 rounded-full bg-status-warning/50"></div>
-            <div class="w-2.5 h-2.5 rounded-full bg-status-online/50"></div>
-          </div>
-          <div class="font-label-caps text-[10px] text-on-surface-variant flex gap-4">
-            <span>BAUD: 115200</span>
-            <span>MTU: 247</span>
-          </div>
-        </div>
-        <!-- Log Stream -->
-        <div class="flex-grow h-64 overflow-y-auto p-4 font-label-caps text-[12px] leading-relaxed terminal-scroll bg-black/30 font-mono" id="terminal">
-          <div class="terminal-line sys">시스템: 대기 중입니다. 기기를 연결해 주세요.</div>
-        </div>
-        <!-- Input Area -->
-        <div class="p-3 bg-surface-container-low/80 border-t border-glass-border">
-          <div class="flex gap-2 items-center">
-            <div class="relative flex-grow group">
-              <div class="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-label-caps text-[14px] font-mono">$</div>
-              <input autocomplete="off" class="w-full bg-surface-container-lowest border border-glass-border rounded-lg pl-8 pr-3 py-2.5 font-mono text-[13px] text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-on-surface-variant/30" id="cmd-input" placeholder="ASCII 1글자 입력 (예: 1)" maxlength="1" onkeypress="handleLogKeyPress(event)"/>
-            </div>
-            <button class="bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary p-2.5 rounded-lg active:scale-90 transition-transform flex items-center justify-center" onclick="sendCustomCommand()">
-              <span class="material-symbols-outlined text-[20px]">send</span>
+            <button id="disconnect-btn-main" class="btn btn-danger" style="margin-top: 10px;">
+                <i class="fa-solid fa-link-slash"></i> 블루투스 연결 해제
             </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Hint box -->
-      <div class="mt-4 flex items-center justify-center gap-2 py-3 px-4 bg-glass-surface rounded-xl border border-glass-border">
-        <span class="material-symbols-outlined text-primary text-[18px]">info</span>
-        <p class="font-body-sm text-[12px] text-on-surface-variant">단일 ASCII 글자 명령어('1' ~ '9')만 송신할 수 있습니다.</p>
-      </div>
-    </section>
-
-    <!-- 4. 기기 정보/설정 탭 섹션 -->
-    <section id="info-section" class="tab-section">
-      <!-- User Profile -->
-      <div class="glass-card rounded-xl p-card-padding flex items-center gap-4 mb-6">
-        <div class="relative">
-          <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 bg-surface-variant flex items-center justify-center">
-            <span class="material-symbols-outlined text-primary text-3xl">person</span>
-          </div>
-          <div class="absolute bottom-0 right-0 w-4 h-4 bg-status-online rounded-full border-2 border-surface shadow-sm" id="profile-status-dot"></div>
-        </div>
-        <div class="flex-grow">
-          <h2 class="font-headline-md text-headline-md text-on-surface">준석</h2>
-          <p class="font-body-sm text-[13px] text-on-surface-variant">Lumina Smart Home Member</p>
-        </div>
-      </div>
-
-      <!-- Device Configuration Details -->
-      <div class="space-y-4">
-        <h3 class="font-label-caps text-label-caps text-primary px-1">DEVICE DETAILS</h3>
-        <div class="glass-card rounded-xl overflow-hidden divide-y divide-glass-border">
-          <div class="flex items-center justify-between p-4">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-on-surface-variant">settings_remote</span>
-              <span class="font-body-lg text-on-surface text-[15px]">프로젝트명</span>
-            </div>
-            <span class="font-body-sm text-on-surface-variant text-[14px]">준석의 스마트홈 대시보드</span>
-          </div>
-          <div class="flex items-center justify-between p-4">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-on-surface-variant">badge</span>
-              <span class="font-body-lg text-on-surface text-[15px]">제작자</span>
-            </div>
-            <span class="font-body-sm text-on-surface-variant text-[14px]">준석</span>
-          </div>
-          <div class="flex items-center justify-between p-4">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-on-surface-variant">bluetooth</span>
-              <span class="font-body-lg text-on-surface text-[15px]">Target BLE SSID</span>
-            </div>
-            <span class="font-label-caps text-tertiary">ESP_Js</span>
-          </div>
-          <div class="flex items-center justify-between p-4">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-on-surface-variant">image</span>
-              <span class="font-body-lg text-on-surface text-[15px]">OLED 캐릭터</span>
-            </div>
-            <span class="font-body-sm text-on-surface-variant text-[14px]">img/4.pbm (Snoopy)</span>
-          </div>
         </div>
 
-        <div class="glass-card p-5 rounded-xl text-[13px] line-height-relaxed text-on-surface-variant/80 space-y-2">
-          <strong class="text-on-surface text-[14px] block mb-2">💡 블루투스 무선 통신 팁</strong>
-          <p>- <strong>iOS 아이폰</strong>에서는 Safari 대신 App Store에서 무료 설치 가능한 <strong>Bluefy</strong> 웹 BLE 브라우저 앱을 실행하여 본 웹사이트 주소로 접속해 주세요.</p>
-          <p>- <strong>안드로이드 크롬</strong> 브라우저에서는 블루투스 스캔 권한 및 위치 정보가 켜져 있어야 합니다.</p>
-          <p>- <strong>로컬 테스트</strong> 시 웹 블루투스 보안 규정 상 <code>localhost</code> 주소 혹은 <code>https://</code> 프로토콜 환경에서만 스캔 팝업이 활성화됩니다.</p>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Connection Overlay -->
-  <div class="fixed inset-0 z-[100] flex flex-col items-center justify-center p-8 transition-opacity duration-700 bg-background/85 backdrop-blur-[20px]" id="overlay">
-    <div class="relative z-10 text-center max-w-xs flex flex-col items-center">
-      <div class="w-24 h-24 rounded-full border-2 border-primary/30 flex items-center justify-center mb-8 animate-pulse-slow">
-        <span class="material-symbols-outlined text-primary text-[48px]" style="font-variation-settings: 'FILL' 1;">bluetooth_connected</span>
-      </div>
-      <h2 class="font-headline-lg text-headline-lg text-primary mb-2">ESP_Js Found</h2>
-      <p class="font-body-sm text-body-sm text-on-surface-variant mb-8 opacity-75">준석의 스마트홈 시스템에 무선 연결이 필요합니다. BLE 허브 기기를 활성화해 주십시오.</p>
-      <button class="w-full py-4 bg-primary text-on-primary font-headline-md rounded-full shadow-[0_0_30px_rgba(173,198,255,0.3)] hover:brightness-110 active:scale-95 transition-all" onclick="connectBLE()">
-        Connect to ESP_Js
-      </button>
     </div>
-  </div>
 
-  <!-- Bottom Navigation Bar (Glassmorphic) -->
-  <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[448px] rounded-xl z-50 bg-glass-surface backdrop-blur-xl border border-glass-border shadow-[0_0_30px_rgba(59,130,246,0.1)]">
-    <div class="flex justify-around items-center h-20 px-2">
-      <!-- Dashboard -->
-      <button class="flex flex-col items-center justify-center text-primary transition-colors active:scale-90 duration-200" id="tab-dashboard" onclick="switchTab('dashboard')">
-        <span class="material-symbols-outlined mb-1">dashboard</span>
-        <span class="font-label-caps text-label-caps">Dashboard</span>
-      </button>
-      <!-- Devices -->
-      <button class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:text-primary transition-colors active:scale-90 duration-200" id="tab-devices" onclick="switchTab('devices')">
-        <span class="material-symbols-outlined mb-1">router</span>
-        <span class="font-label-caps text-label-caps">Devices</span>
-      </button>
-      <!-- Terminal -->
-      <button class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:text-primary transition-colors active:scale-90 duration-200" id="tab-log" onclick="switchTab('log')">
-        <span class="material-symbols-outlined mb-1">terminal</span>
-        <span class="font-label-caps text-label-caps">Terminal</span>
-      </button>
-      <!-- Settings -->
-      <button class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:text-primary transition-colors active:scale-90 duration-200" id="tab-info" onclick="switchTab('info')">
-        <span class="material-symbols-outlined mb-1">settings</span>
-        <span class="font-label-caps text-label-caps">Settings</span>
-      </button>
-    </div>
-  </nav>
+    <!-- 하단 고정 탭 바 -->
+    <nav class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('tab-home', this)">
+            <i class="fa-solid fa-house"></i>
+            <span>홈</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('tab-controls', this)">
+            <i class="fa-solid fa-sliders"></i>
+            <span>조명/기기</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('tab-play', this)">
+            <i class="fa-solid fa-gamepad"></i>
+            <span>놀이/로그</span>
+        </div>
+    </nav>
 
-  <!-- JavaScript 연동 코드 -->
-  <script>
-    // 전역 블루투스 상태 변수
-    let bluetoothDevice = null;
-    let rxCharacteristic = null;
-    let txCharacteristic = null;
+    <!-- JavaScript 로직 -->
+    <script>
+        // BLE NUS UUID 정의
+        const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const NUS_RX_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+        const NUS_TX_CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
-    // Nordic UART Service (NUS) UUID 정의
-    const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    const RX_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // 웹 -> ESP32
-    const TX_CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // ESP32 -> 웹
+        let bleDevice = null;
+        let rxCharacteristic = null;
+        let txCharacteristic = null;
 
-    // UI 탭 전환 함수
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-section').forEach(section => {
-        section.classList.remove('active');
-      });
-      document.querySelectorAll('nav button').forEach(item => {
-        item.classList.remove('text-primary');
-        item.classList.add('text-on-surface-variant', 'opacity-60');
-      });
+        // UI 요소 캐싱
+        const connectBtn = document.getElementById('connect-btn');
+        const overlay = document.getElementById('connection-overlay');
+        const headerStatus = document.getElementById('header-status');
+        const terminal = document.getElementById('terminal');
+        const sensorCard = document.getElementById('sensor-card');
 
-      document.getElementById(`${tabId}-section`).classList.add('active');
-      
-      const activeTabButton = document.getElementById(`tab-${tabId}`);
-      if (activeTabButton) {
-        activeTabButton.classList.add('text-primary');
-        activeTabButton.classList.remove('text-on-surface-variant', 'opacity-60');
-      }
-    }
+        // 센서 및 전역 변수
+        const valTemp = document.getElementById('val-temp');
+        const valHumi = document.getElementById('val-humi');
+        const valCds = document.getElementById('val-cds');
+        const valTimer = document.getElementById('val-timer');
 
-    // 터미널 로깅 기능
-    function log(message, type = 'sys') {
-      const terminal = document.getElementById('terminal');
-      const line = document.createElement('div');
-      line.className = `terminal-line ${type} mb-1.5`;
-      
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-      line.innerHTML = `<span class="text-on-surface-variant">[${time}]</span> <span class="ml-2 font-bold">${type.toUpperCase()}:</span> <span>${message}</span>`;
-      
-      terminal.appendChild(line);
-      terminal.scrollTop = terminal.scrollHeight;
-    }
+        // 놀이 카운트 요소
+        const countPlay1 = document.getElementById('count-play1');
+        const countPlay2 = document.getElementById('count-play2');
+        const countPlay3 = document.getElementById('count-play3');
+        const countPlay4 = document.getElementById('count-play4');
 
-    function clearLogs() {
-      const terminal = document.getElementById('terminal');
-      terminal.innerHTML = '<div class="terminal-line sys">시스템: 로그 초기화 완료.</div>';
-    }
+        // 로그 출력 함수
+        function log(message, type = 'system') {
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            const now = new Date().toLocaleTimeString();
+            line.textContent = `[${now}] ${message}`;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
 
-    // 연결 상태 배지/텍스트 갱신
-    function updateStatus(status, text) {
-      const btIcon = document.getElementById('bt-icon');
-      const btLabel = document.getElementById('bt-label');
+        // 탭 전환 기능
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+        }
 
-      if (status === 'connected') {
-        btIcon.className = 'material-symbols-outlined text-status-online';
-        btIcon.textContent = 'bluetooth_connected';
-        btLabel.className = 'hidden md:block font-label-caps text-label-caps text-status-online';
-        btLabel.textContent = text;
+        // BLE 연결 핸들러
+        async function connectBLE() {
+            log('블루투스 장치를 탐색하는 중...', 'system');
+            
+            // 아이폰 Safari/Chrome의 Web BLE 미지원 방어벽
+            if (!navigator.bluetooth) {
+                const errMsg = "현재 브라우저는 블루투스 기능을 지원하지 않습니다.\n아이폰 유저는 반드시 다운로드받으신 'Bluefy' 브라우저 앱을 실행하고 주소를 입력해 접속해 주세요!";
+                log(errMsg, "danger");
+                alert(errMsg);
+                return;
+            }
+            
+            try {
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{
+                        services: [NUS_SERVICE_UUID],
+                        namePrefix: 'ESP_'
+                    }]
+                });
+
+                log(`장치 발견: ${bleDevice.name}. 연결 중...`, 'system');
+                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+                const server = await bleDevice.gatt.connect();
+                log('GATT 서버 연결 완료. 서비스 검색 중...', 'system');
+
+                const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+                log('NUS 서비스 획득. 캐릭터리스틱 검색 중...', 'system');
+
+                rxCharacteristic = await service.getCharacteristic(NUS_RX_CHARACTERISTIC_UUID);
+                txCharacteristic = await service.getCharacteristic(NUS_TX_CHARACTERISTIC_UUID);
+
+                // 데이터 수신 리스너 등록
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+
+                // 연결 성공 UI 반영
+                log('통신 채널이 생성되었습니다. 연결 성공!', 'system');
+                overlay.classList.add('hidden');
+                headerStatus.className = 'status-badge connected';
+                headerStatus.querySelector('span').textContent = bleDevice.name;
+
+                // 시간 동기화 커맨드 전송
+                setTimeout(sendTimeSync, 1000);
+
+            } catch (error) {
+                log(`에러: ${error.message}`, 'danger');
+                console.error(error);
+            }
+        }
+
+        // BLE 수신 패킷 처리 함수
+        function handleNotifications(event) {
+            const value = event.target.value;
+            const decoder = new TextDecoder('utf-8');
+            const dataStr = decoder.decode(value).trim();
+            log(`수신 ➔ ${dataStr}`, 'rx');
+
+            // 1. 개별 상태 메시지 분기 처리
+            if (dataStr.includes('temp :')) {
+                const temp = dataStr.split(':')[1].trim();
+                valTemp.innerHTML = `${temp}<span>°C</span>`;
+            } else if (dataStr.includes('humi :')) {
+                const humi = dataStr.split(':')[1].trim();
+                valHumi.innerHTML = `${humi}<span>%</span>`;
+            } else if (/^\d+$/.test(dataStr)) {
+                // 숫자로만 되어 있는 것은 조도 센서 값
+                const lux = dataStr;
+                valCds.innerHTML = `${lux}<span>Lux</span>`;
+            } else if (dataStr.startsWith('feed_countdown:')) {
+                const totalSeconds = parseInt(dataStr.split(':')[1].trim(), 10);
+                updateTimerDisplay(totalSeconds);
+            } else if (dataStr.startsWith('env_alert:')) {
+                const alertVal = dataStr.split(':')[1].trim();
+                if (alertVal === '1') {
+                    sensorCard.classList.add('alert-card');
+                } else {
+                    sensorCard.classList.remove('alert-card');
+                }
+            } else if (dataStr.startsWith('owner_call:')) {
+                const callVal = dataStr.split(':')[1].trim();
+                if (callVal === '1' && myRole === 'owner') {
+                    // 주인용 노트북 화면에만 수신 전화를 띄워 줍니다
+                    openCallModal();
+                }
+            } else if (dataStr.startsWith('play_count_1:')) {
+                countPlay1.textContent = dataStr.split(':')[1].trim();
+            } else if (dataStr.startsWith('play_count_2:')) {
+                countPlay2.textContent = dataStr.split(':')[1].trim();
+            } else if (dataStr.startsWith('play_count_3:')) {
+                countPlay3.textContent = dataStr.split(':')[1].trim();
+            } else if (dataStr.startsWith('play_count_4:')) {
+                countPlay4.textContent = dataStr.split(':')[1].trim();
+            }
+        }
+
+        // 타이머 포맷팅
+        function updateTimerDisplay(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            const formatted = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            valTimer.textContent = formatted;
+        }
+
+        // BLE 커맨드 전송 함수
+        async function sendCommand(cmdStr) {
+            if (!rxCharacteristic) {
+                log('보드에 연결되어 있지 않습니다.', 'system');
+                return;
+            }
+            try {
+                const encoder = new TextEncoder('utf-8');
+                const data = encoder.encode(cmdStr);
+                await rxCharacteristic.writeValue(data);
+                log(`송신 ➔ ${cmdStr}`, 'tx');
+            } catch (error) {
+                log(`송신 실패: ${error.message}`, 'system');
+            }
+        }
+
+        // 시간 동기화 기능
+        function sendTimeSync() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            const hour = now.getHours();
+            const min = now.getMinutes();
+            const sec = now.getSeconds();
+            const syncStr = `SETTIME:${year}:${month}:${day}:${hour}:${min}:${sec}\n`;
+            sendCommand(syncStr);
+        }
+
+        // 화상 통화 (WebRTC & WebCam) 및 실시간 펫캠 기능 구현
+        const signalingHost = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") 
+            ? "" 
+            : "http://192.168.0.4:8000"; // 외부 호스팅(GitHub Pages 등) 시 로컬 노트북 서버로 API 전달
+            
+        let myRole = "owner"; // 기본 역할은 주인 노트북
+        let localStream = null;
+        let petCamStream = null;
+        let pc = null;
+        let signalingInterval = null;
+        let audioCtx = null;
+        let ringInterval = null;
+
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        // 기기 역할 강제 지정 함수
+        function setDeviceRole(role) {
+            myRole = role;
+            document.querySelectorAll('#role-selector .btn').forEach(btn => btn.classList.remove('active'));
+            if (role === 'owner') {
+                document.getElementById('btn-role-owner').classList.add('active');
+                log("주인용 노트북 모드로 설정되었습니다.", "system");
+                stopSignalingPolling();
+                startSignalingPolling();
+            } else {
+                document.getElementById('btn-role-dog').classList.add('active');
+                log("강아지용 스마트폰 모드로 설정되었습니다. (폰 고정용)", "system");
+                stopSignalingPolling();
+                startSignalingPolling();
+            }
+        }
+
+        // 상대방 신호 교환을 위한 API 폴링 기동 (에러 방어 강화)
+        function startSignalingPolling() {
+            if (signalingInterval) clearInterval(signalingInterval);
+            signalingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${signalingHost}/api/get_signal?role=${myRole}`);
+                    const data = await res.json();
+                    
+                    if (data.sdp) {
+                        handleRemoteSDP(data.sdp);
+                    }
+                    if (data.candidates && data.candidates.length > 0) {
+                        handleRemoteCandidates(data.candidates);
+                    }
+                } catch (e) {
+                    // 폴링 실패 무시
+                }
+            }, 1000);
+        }
+
+        function stopSignalingPolling() {
+            if (signalingInterval) {
+                clearInterval(signalingInterval);
+                signalingInterval = null;
+            }
+        }
+
+        // PeerConnection 객체 생성 및 이벤트 연결
+        function createPeerConnection() {
+            if (pc) return pc;
+            
+            pc = new RTCPeerConnection(rtcConfig);
+            log("RTCPeerConnection 생성 완료", "system");
+            
+            // 상대방 카메라 비디오 피드가 수신되었을 때 처리
+            pc.ontrack = (event) => {
+                log("상대방 비디오 스트림 수신 완료!", "system");
+                const remoteStream = event.streams[0];
+                
+                if (myRole === "owner") {
+                    // 주인은 펫캠 프리뷰 영역과 화상통화 비디오 영역에 강아지 카메라 출력
+                    document.getElementById('pet-cam-preview').srcObject = remoteStream;
+                    document.getElementById('pet-cam-placeholder').style.display = "none";
+                    document.getElementById('pet-cam-video').srcObject = remoteStream;
+                } else {
+                    // 강아지는 화상통화 화면 액정에 주인의 노트북 웹캠 출력
+                    document.getElementById('pet-cam-video').srcObject = remoteStream;
+                }
+            };
+            
+            pc.onicecandidate = async (event) => {
+                if (event.candidate) {
+                    // 생성된 ICE 후보를 서버로 전송
+                    await fetch('/api/send_candidate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role: myRole, candidate: event.candidate })
+                    });
+                }
+            };
+            
+            return pc;
+        }
+
+        // 상대방이 보낸 SDP 정보(Offer 또는 Answer) 처리
+        async function handleRemoteSDP(sdp) {
+            const peer = createPeerConnection();
+            if (peer.signalingState === "stable") return;
+            
+            await peer.setRemoteDescription(new RTCSessionDescription(sdp));
+            
+            if (sdp.type === "offer") {
+                if (myRole === "dog") {
+                    // 강아지 폰은 주인이 펫캠을 요청하거나 전화를 걸었을 때 자동으로 전면 카메라를 켜서 릴레이!
+                    try {
+                        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                            console.error("iOS/HTTP: mediaDevices or getUserMedia is undefined.");
+                            return;
+                        }
+                        if (!localStream) {
+                            localStream = await navigator.mediaDevices.getUserMedia({
+                                video: { facingMode: "user" }, // 강아지를 비추는 스마트폰 전면 카메라
+                                audio: false
+                            });
+                            localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+                        }
+                        
+                        const answer = await peer.createAnswer();
+                        await peer.setLocalDescription(answer);
+                        
+                        await fetch(`${signalingHost}/api/send_sdp`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ role: myRole, sdp: answer })
+                        });
+                        
+                        // 강아지 액정 화면에 통화 모달 팝업 가동
+                        document.getElementById('pet-call-modal').style.display = 'flex';
+                        document.getElementById('call-status-label').textContent = "주인과 연결되었습니다!";
+                        document.getElementById('btn-call-accept').style.display = 'none'; // 강아지 화면에선 수락버튼 필요없음
+                    } catch (err) {
+                        console.error("Dog auto camera start failed:", err);
+                    }
+                }
+            }
+        }
+
+        async function handleRemoteCandidates(candidates) {
+            const peer = createPeerConnection();
+            for (const cand of candidates) {
+                try {
+                    await peer.addIceCandidate(new RTCIceCandidate(cand));
+                } catch (e) {
+                    console.error("Error adding ice candidate:", e);
+                }
+            }
+        }
+
+        // 펫캠 버튼 작동 (주인이 원격으로 강아지 펫캠 활성화 요청)
+        async function togglePetCam() {
+            const btn = document.getElementById('btn-toggle-petcam');
+            const preview = document.getElementById('pet-cam-preview');
+            const placeholder = document.getElementById('pet-cam-placeholder');
+            
+            if (pc) {
+                // 이미 연결 상태이면 리셋
+                resetWebRTC();
+                btn.className = "btn btn-primary";
+                btn.innerHTML = '<i class="fa-solid fa-video"></i> <span>실시간 펫캠 켜기</span>';
+                placeholder.style.display = "flex";
+                preview.srcObject = null;
+                log("펫캠 모니터를 종료했습니다.", "system");
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>펫캠 연결 중...</span>';
+                placeholder.style.display = "none";
+                
+                try {
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        log("카메라 API를 지원하지 않는 브라우저입니다. (HTTP 보안 차단 우회 필요)", "danger");
+                        btn.className = "btn btn-primary";
+                        btn.innerHTML = '<i class="fa-solid fa-video"></i> <span>실시간 펫캠 켜기</span>';
+                        placeholder.style.display = "flex";
+                        return;
+                    }
+                    const peer = createPeerConnection();
+                    
+                    // 주인의 웹캠 스트림은 보내지 않고, 비디오 데이터 수신을 위해 수신 대기 설정
+                    const offer = await peer.createOffer({ offerToReceiveVideo: true });
+                    await peer.setLocalDescription(offer);
+                    
+                    await fetch(`${signalingHost}/api/send_sdp`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role: myRole, sdp: offer })
+                    });
+                    
+                    log("강아지 카메라로 펫캠 영상 송출을 요청했습니다.", "system");
+                } catch (err) {
+                    console.error("Petcam connection error:", err);
+                    resetWebRTC();
+                }
+            }
+        }
+
+        function openCallModal() {
+            const modal = document.getElementById('pet-call-modal');
+            const acceptBtn = document.getElementById('btn-call-accept');
+            const statusLabel = document.getElementById('call-status-label');
+            const videoContainer = document.getElementById('video-call-container');
+            
+            statusLabel.textContent = "댕댕이가 화상 통화를 요청했습니다!";
+            acceptBtn.style.display = "flex";
+            videoContainer.style.display = "none";
+            modal.style.display = 'flex';
+            
+            playRingSound();
+        }
+
+        function playRingSound() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ringInterval) clearInterval(ringInterval);
+                
+                const ring = () => {
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                };
+                ring();
+                ringInterval = setInterval(ring, 1200);
+            } catch (e) {
+                console.error("Audio ringtone failed:", e);
+            }
+        }
+
+        function stopRingSound() {
+            if (ringInterval) {
+                clearInterval(ringInterval);
+                ringInterval = null;
+            }
+        }
+
+        async function acceptCall() {
+            stopRingSound();
+            const statusLabel = document.getElementById('call-status-label');
+            const acceptBtn = document.getElementById('btn-call-accept');
+            const videoContainer = document.getElementById('video-call-container');
+            
+            statusLabel.textContent = "연결 중...";
+            
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    statusLabel.textContent = "화상캠 API 미지원 (HTTP 보안 차단)";
+                    sendCommand("call_accept");
+                    return;
+                }
+                const peer = createPeerConnection();
+                
+                // 노트북 전면 웹캠(주인 얼굴) 활성화
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user" },
+                    audio: false
+                });
+                
+                // 내 카메라 트랙을 PeerConnection에 추가하여 상대방(강아지 화면)으로 송출
+                localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+                
+                // 연결 수립을 위한 재협상 제안(Offer) 생성 및 발송
+                const offer = await peer.createOffer();
+                await peer.setLocalDescription(offer);
+                
+                await fetch(`${signalingHost}/api/send_sdp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: myRole, sdp: offer })
+                });
+                
+                videoContainer.style.display = "block";
+                statusLabel.textContent = "댕댕이와 통화 중!";
+                acceptBtn.style.display = "none";
+                
+                // 보드로 통화 수락 신호 송신
+                sendCommand("call_accept");
+            } catch (err) {
+                console.error("Camera access error:", err);
+                statusLabel.textContent = "웹캠 활성화 실패 (권한 에러)";
+                sendCommand("call_accept");
+            }
+        }
+
+        function endCall() {
+            stopRingSound();
+            resetWebRTC();
+            document.getElementById('pet-call-modal').style.display = 'none';
+            sendCommand("call_end");
+        }
+
+        // WebRTC 데이터 리셋 함수
+        async function resetWebRTC() {
+            stopRingSound();
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (petCamStream) {
+                petCamStream.getTracks().forEach(track => track.stop());
+                petCamStream = null;
+            }
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            
+            document.getElementById('pet-cam-preview').srcObject = null;
+            document.getElementById('pet-cam-video').srcObject = null;
+            
+            try {
+                await fetch(`${signalingHost}/api/reset`);
+            } catch (e) {}
+        }
+
+        // 통화 버튼 리스너 바인딩
+        document.getElementById('btn-call-accept').addEventListener('click', acceptCall);
+        document.getElementById('btn-call-end').addEventListener('click', endCall);
+        document.getElementById('btn-toggle-petcam').addEventListener('click', togglePetCam);
         
-        // Profile status update
-        const profileStatus = document.getElementById('profile-status-dot');
-        if (profileStatus) {
-          profileStatus.className = 'absolute bottom-0 right-0 w-4 h-4 bg-status-online rounded-full border-2 border-surface shadow-sm';
+        // 페이지 로딩 시 자동으로 시널링 폴링 시작
+        startSignalingPolling();
+
+        // 연결 해제 처리
+        function disconnect() {
+            if (bleDevice) {
+                bleDevice.gatt.disconnect();
+            }
         }
-      } else if (status === 'connecting') {
-        btIcon.className = 'material-symbols-outlined text-status-warning animate-spin';
-        btIcon.textContent = 'autorenew';
-        btLabel.className = 'hidden md:block font-label-caps text-label-caps text-status-warning';
-        btLabel.textContent = text;
-      } else {
-        btIcon.className = 'material-symbols-outlined text-on-surface-variant';
-        btIcon.textContent = 'bluetooth_searching';
-        btLabel.className = 'hidden md:block font-label-caps text-label-caps text-on-surface-variant';
-        btLabel.textContent = text;
 
-        const profileStatus = document.getElementById('profile-status-dot');
-        if (profileStatus) {
-          profileStatus.className = 'absolute bottom-0 right-0 w-4 h-4 bg-status-error rounded-full border-2 border-surface shadow-sm';
+        function onDisconnected() {
+            log('블루투스 연결이 해제되었습니다.', 'system');
+            overlay.classList.remove('hidden');
+            headerStatus.className = 'status-badge disconnected';
+            headerStatus.querySelector('span').textContent = '연결 안됨';
+            
+            // 데이터 초기화
+            valTemp.innerHTML = `--<span>°C</span>`;
+            valHumi.innerHTML = `--<span>%</span>`;
+            valCds.innerHTML = `--<span>Lux</span>`;
+            valTimer.textContent = '--:--:--';
         }
-      }
-    }
 
-    // Web Bluetooth 연결 함수
-    async function connectBLE() {
-      updateStatus('connecting', 'SCANNING...');
-      log('블루투스 기기 검색 창을 띄웁니다.', 'sys');
+        // UI 버튼 리스너 등록
+        connectBtn.addEventListener('click', connectBLE);
+        document.getElementById('disconnect-btn-main').addEventListener('click', disconnect);
 
-      try {
-        bluetoothDevice = await navigator.bluetooth.requestDevice({
-          filters: [
-            { services: [NUS_SERVICE_UUID] },
-            { namePrefix: 'ESP_' }
-          ]
+        // 1. 센서 리프레시 버튼
+        document.getElementById('btn-refresh-sensors').addEventListener('click', () => {
+            sendCommand('1'); // 온습도 요청
+            setTimeout(() => sendCommand('2'), 300); // 조도 요청
         });
 
-        log(`장치를 찾았습니다: ${bluetoothDevice.name}`, 'sys');
-        bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        // 2. 급식 버튼
+        document.getElementById('btn-feed-now').addEventListener('click', () => sendCommand('a'));
 
-        log('GATT 서버에 연동 중...', 'sys');
-        const server = await bluetoothDevice.gatt.connect();
+        // 3. 조명 버튼
+        document.getElementById('btn-light-auto').addEventListener('click', (e) => {
+            sendCommand('b');
+            e.currentTarget.classList.toggle('active');
+        });
+        document.getElementById('btn-light-on').addEventListener('click', () => {
+            sendCommand('7');
+            document.getElementById('btn-light-auto').classList.remove('active');
+        });
+        document.getElementById('btn-light-off').addEventListener('click', () => {
+            sendCommand('8');
+            document.getElementById('btn-light-auto').classList.remove('active');
+        });
 
-        log('NUS 서비스 프로필 매칭 중...', 'sys');
-        const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+        // 4. 기타 컴포넌트 제어
+        document.getElementById('btn-lcd-on').addEventListener('click', () => sendCommand('3'));
+        document.getElementById('btn-lcd-off').addEventListener('click', () => sendCommand('4'));
+        document.getElementById('btn-melody-1').addEventListener('click', () => sendCommand('5'));
+        document.getElementById('btn-melody-2').addEventListener('click', () => sendCommand('6'));
+        document.getElementById('btn-oled-img').addEventListener('click', () => sendCommand('9'));
 
-        log('통신 속성 채널 바인딩 중...', 'sys');
-        rxCharacteristic = await service.getCharacteristic(RX_CHARACTERISTIC_UUID);
-        txCharacteristic = await service.getCharacteristic(TX_CHARACTERISTIC_UUID);
+        // 5. 놀이기구 제어
+        document.getElementById('btn-play-1').addEventListener('click', () => sendCommand('c'));
+        document.getElementById('btn-play-2').addEventListener('click', () => sendCommand('d'));
+        document.getElementById('btn-play-3').addEventListener('click', () => sendCommand('e'));
+        document.getElementById('btn-play-4').addEventListener('click', () => sendCommand('f'));
 
-        // TX Notify 수신 시작
-        log('ESP32 원격 패킷 수신 대기...', 'sys');
-        await txCharacteristic.startNotifications();
-        txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-
-        log('스마트홈 연동 완료!', 'sys');
-        updateStatus('connected', `CONNECTED: ${bluetoothDevice.name}`);
-
-        // 오버레이 페이드아웃 및 숨김
-        const overlay = document.getElementById('overlay');
-        overlay.style.opacity = '0';
-        setTimeout(() => {
-          overlay.style.display = 'none';
-        }, 700);
-
-        // 연결 완료 후 온습도 및 조도 초기 데이터 동기화
-        setTimeout(() => sendCommand('1'), 500);  // 온습도 요청
-        setTimeout(() => sendCommand('2'), 1000); // 조도 요청
-
-      } catch (error) {
-        log(`연결 오류: ${error.message}`, 'err');
-        updateStatus('disconnected', 'DISCONNECTED');
-        alert(`연결 과정에 실패하였습니다:\n${error.message}`);
-      }
-    }
-
-    // 연결 끊김 발생 이벤트 핸들러
-    function onDisconnected() {
-      log('ESP32 블루투스 연결이 종료되었습니다.', 'sys');
-      updateStatus('disconnected', 'DISCONNECTED');
-
-      // 오버레이 다시 출력
-      const overlay = document.getElementById('overlay');
-      overlay.style.display = 'flex';
-      setTimeout(() => {
-        overlay.style.opacity = '1';
-      }, 50);
-
-      rxCharacteristic = null;
-      txCharacteristic = null;
-      bluetoothDevice = null;
-
-      // 센서 데이터 뷰 초기화
-      document.getElementById('temp-value').textContent = '--';
-      document.getElementById('humi-value').textContent = '--';
-      document.getElementById('cds-value').textContent = '--';
-      document.getElementById('temp-progress').style.width = '0%';
-      document.getElementById('humi-progress').style.width = '0%';
-      document.getElementById('cds-progress').style.width = '0%';
-      document.getElementById('cds-status').textContent = '대기 중...';
-      document.getElementById('servo-display-angle').textContent = '--';
-      
-      // Actuator UI 토글 리셋
-      resetLEDState();
-      resetLCDState();
-    }
-
-    // ESP32로 단방향 ASCII 문자 명령어 송출
-    async function sendCommand(char) {
-      if (!rxCharacteristic) {
-        log('명령 송출 실패: 블루투스가 연결되어 있지 않습니다.', 'err');
-        return;
-      }
-      try {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(char);
-        if (rxCharacteristic.writeValueWithoutResponse) {
-          await rxCharacteristic.writeValueWithoutResponse(data);
-        } else {
-          await rxCharacteristic.writeValue(data);
-        }
-        log(`'${char}'`, 'tx');
-      } catch (error) {
-        log(`송신 에러: ${error.message}`, 'err');
-      }
-    }
-
-    // RGB LED 제어 및 뷰 상태 갱신
-    function setLed(isOn) {
-      const bg = document.getElementById('led-indicator-bg');
-      const icon = document.getElementById('led-indicator-icon');
-      const statusText = document.getElementById('led-indicator-status');
-      
-      if (isOn) {
-        bg.className = 'w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/40 active-glow';
-        icon.className = 'material-symbols-outlined text-primary';
-        icon.style.fontVariationSettings = "'FILL' 1";
-        statusText.className = 'font-label-caps text-label-caps text-primary font-bold';
-        statusText.textContent = 'ONLINE (HIGH)';
-        
-        document.getElementById('btn-led-on').className = 'px-4 py-2 bg-primary text-on-primary rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform font-bold';
-        document.getElementById('btn-led-off').className = 'px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform border border-glass-border opacity-60';
-        sendCommand('7');
-      } else {
-        bg.className = 'w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center border border-glass-border';
-        icon.className = 'material-symbols-outlined text-on-surface-variant';
-        icon.style.fontVariationSettings = "'FILL' 0";
-        statusText.className = 'font-label-caps text-label-caps text-on-surface-variant opacity-50';
-        statusText.textContent = 'OFF';
-        
-        document.getElementById('btn-led-on').className = 'px-4 py-2 bg-primary-container text-on-primary-container rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
-        document.getElementById('btn-led-off').className = 'px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform border border-glass-border font-bold';
-        sendCommand('8');
-      }
-    }
-
-    function resetLEDState() {
-      const bg = document.getElementById('led-indicator-bg');
-      const icon = document.getElementById('led-indicator-icon');
-      const statusText = document.getElementById('led-indicator-status');
-      bg.className = 'w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center border border-glass-border';
-      icon.className = 'material-symbols-outlined text-on-surface-variant';
-      icon.style.fontVariationSettings = "'FILL' 0";
-      statusText.className = 'font-label-caps text-label-caps text-on-surface-variant opacity-50';
-      statusText.textContent = 'OFF';
-      
-      document.getElementById('btn-led-on').className = 'px-4 py-2 bg-primary-container text-on-primary-container rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
-      document.getElementById('btn-led-off').className = 'px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform border border-glass-border opacity-60';
-    }
-
-    // LCD 백라이트 제어 및 뷰 상태 갱신
-    function setLcd(isOn) {
-      const preview = document.getElementById('lcd-preview-text');
-      if (isOn) {
-        document.getElementById('btn-lcd-on').className = 'px-4 py-2 border border-primary/50 text-primary bg-primary/20 rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform font-bold';
-        document.getElementById('btn-lcd-off').className = 'px-4 py-2 border border-glass-border text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
-        preview.className = 'bg-surface-container-lowest/80 border border-glass-border p-4 rounded-lg font-data-display text-lg text-primary tracking-widest text-center shadow-[0_0_15px_rgba(173,198,255,0.15)] font-mono min-h-[58px]';
-        sendCommand('3');
-      } else {
-        document.getElementById('btn-lcd-on').className = 'px-4 py-2 border border-primary/30 text-primary bg-primary/10 rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
-        document.getElementById('btn-lcd-off').className = 'px-4 py-2 border border-glass-border text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform font-bold';
-        preview.className = 'bg-surface-container-lowest/40 border border-glass-border p-4 rounded-lg font-data-display text-lg text-on-surface-variant/40 tracking-widest text-center shadow-inner font-mono min-h-[58px]';
-        sendCommand('4');
-      }
-    }
-
-    function resetLCDState() {
-      const preview = document.getElementById('lcd-preview-text');
-      document.getElementById('btn-lcd-on').className = 'px-4 py-2 border border-primary/30 text-primary bg-primary/10 rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
-      document.getElementById('btn-lcd-off').className = 'px-4 py-2 border border-glass-border text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
-      preview.className = 'bg-surface-container-lowest/40 border border-glass-border p-4 rounded-lg font-data-display text-lg text-on-surface-variant/40 tracking-widest text-center shadow-inner font-mono min-h-[58px]';
-    }
-
-    // 센서 데이터 1괄 요청 함수
-    function syncAllSensors() {
-      sendCommand('1'); // 온습도 요청
-      setTimeout(() => sendCommand('2'), 300); // 조도 요청
-    }
-
-    // 수신 버퍼링을 위한 전역 스트링 변수
-    let rxBuffer = "";
-
-    // ESP32로부터 넘어오는 패킷 리시브 핸들러
-    function handleNotifications(event) {
-      const value = event.target.value;
-      const decoder = new TextDecoder('utf-8');
-      const decodedString = decoder.decode(value);
-      
-      rxBuffer += decodedString;
-      
-      // 줄바꿈 개행문자(\n) 기준으로 버퍼 라인별 스플릿
-      while (rxBuffer.includes('\n')) {
-        const idx = rxBuffer.indexOf('\n');
-        const line = rxBuffer.slice(0, idx).trim();
-        rxBuffer = rxBuffer.slice(idx + 1);
-        
-        if (line) {
-          log(line, 'rx');
-          parseIncomingPacket(line);
-        }
-      }
-    }
-
-    // 센서 리포팅 패킷 해석 및 돔 트리 바인딩
-    function parseIncomingPacket(msg) {
-      // 1. 온도 패킷 ("temp : 24" / "temp : Error")
-      if (msg.includes('temp')) {
-        if (msg.includes('Error')) {
-          document.getElementById('temp-value').textContent = '에러';
-          document.getElementById('temp-progress').style.width = '0%';
-          return;
-        }
-        const match = msg.match(/temp\s*:\s*(\d+)/);
-        if (match) {
-          const val = parseInt(match[1], 10);
-          document.getElementById('temp-value').textContent = val;
-          // 온도는 0~50 범위 비율로 시각화
-          const percent = Math.min(100, Math.max(0, (val / 50) * 100));
-          document.getElementById('temp-progress').style.width = `${percent}%`;
-        }
-      }
-      
-      // 2. 습도 패킷 ("humi : 45" / "humi : Error")
-      else if (msg.includes('humi')) {
-        if (msg.includes('Error')) {
-          document.getElementById('humi-value').textContent = '에러';
-          document.getElementById('humi-progress').style.width = '0%';
-          return;
-        }
-        const match = msg.match(/humi\s*:\s*(\d+)/);
-        if (match) {
-          const val = parseInt(match[1], 10);
-          document.getElementById('humi-value').textContent = val;
-          // 습도는 0~100 범위 그대로
-          const percent = Math.min(100, Math.max(0, val));
-          document.getElementById('humi-progress').style.width = `${percent}%`;
-        }
-      }
-      
-      // 3. 조도 ADC 패킷 (예: "320" / "4095")
-      else if (/^\d+$/.test(msg)) {
-        const val = parseInt(msg, 10);
-        document.getElementById('cds-value').textContent = val;
-        
-        // 조도는 ADC 값이 낮을 수록 밝음. 역산 진행.
-        const percent = Math.min(100, Math.max(0, ((4095 - val) / 4095) * 100));
-        document.getElementById('cds-progress').style.width = `${percent}%`;
-
-        // 4000 초과 시 어두움
-        const isDark = val > 4000;
-        const statusDesc = isDark ? '어두움 (블라인드 닫힘 / 180° 회전)' : '밝음 (블라인드 열림 / 90° 회전)';
-        document.getElementById('cds-status').textContent = statusDesc;
-        
-        // Servo angle display sync
-        const angleDisplay = document.getElementById('servo-display-angle');
-        if (angleDisplay) {
-          angleDisplay.textContent = isDark ? '180°' : '90°';
-        }
-      }
-    }
-
-    // 터미널 인풋 수동 명령어 송출
-    function sendCustomCommand() {
-      const input = document.getElementById('cmd-input');
-      const val = input.value.trim();
-      
-      if (!val) return;
-      if (val.length > 1) {
-        alert('명령어는 단 1글자의 아스키 문자만 입력 전송 가능합니다.');
-        return;
-      }
-
-      sendCommand(val);
-      input.value = '';
-      input.focus();
-    }
-
-    // 터미널 인풋 엔터 키 훅
-    function handleLogKeyPress(event) {
-      if (event.key === 'Enter') {
-        sendCustomCommand();
-      }
-    }
-  </script>
+    </script>
 </body>
 </html>
