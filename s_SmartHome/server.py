@@ -68,6 +68,7 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
                     "candidates": list(signals["candidates_to_owner"])
                 }
                 signals["candidates_to_owner"].clear()
+                signals["dog"] = None  # 가져갔으므로 일회성으로 삭제
             elif role == "dog":
                 # 강아지가 가져갈 데이터 (owner가 보낸 sdp와 candidates)
                 response = {
@@ -75,7 +76,8 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
                     "candidates": list(signals["candidates_to_dog"])
                 }
                 signals["candidates_to_dog"].clear()
-                
+                signals["owner"] = None  # 가져갔으므로 일회성으로 삭제
+            
             self.wfile.write(json.dumps(response).encode('utf-8'))
         elif self.path.startswith("/api/reset"):
             # 시그널링 리셋
