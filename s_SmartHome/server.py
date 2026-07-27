@@ -155,8 +155,13 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"Candidate received")
 
+import socketserver
+
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+
 if __name__ == '__main__':
     port = 8000
-    print(f"Starting WebRTC Signaling & Web Server on port {port}...")
-    server = http.server.HTTPServer(('0.0.0.0', port), SignalingHTTPServer)
+    print(f"Starting Multi-threaded WebRTC Signaling & Web Server on port {port}...")
+    server = ThreadingHTTPServer(('0.0.0.0', port), SignalingHTTPServer)
     server.serve_forever()
