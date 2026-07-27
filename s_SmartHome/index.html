@@ -968,7 +968,7 @@
             pc.onicecandidate = async (event) => {
                 if (event.candidate) {
                     // 생성된 ICE 후보를 서버로 전송
-                    await fetch('/api/send_candidate', {
+                    await fetch(`${signalingHost}/api/send_candidate`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ role: myRole, candidate: event.candidate })
