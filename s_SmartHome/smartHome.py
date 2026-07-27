@@ -4,8 +4,6 @@ from servo import Servo
 import dht
 from lcd_api import LcdApi
 from i2c_lcd import I2cLcd
-import ble_library
-import bluetooth
 import ssd1306
 import framebuf
 import neopixel
@@ -460,9 +458,95 @@ def trigger_play_mode(step):
         
     p.send("snack_requested:1\n")
 
-# BLE 인터페이스 초기화 및 콜백 정의
-ble = bluetooth.BLE()
-p = ble_library.BLESimplePeripheral(ble, "ESP_Js")
+# Wi-Fi 및 서버 정보 로드
+import json
+import network
+import urequests
+
+wifi_ssid = "YOUR_WIFI_SSID"
+wifi_password = "YOUR_WIFI_PASSWORD"
+server_ip = "192.168.0.4"
+
+try:
+    with open("wifi_config.json", "r") as f:
+        config = json.load(f)
+        wifi_ssid = config.get("ssid", wifi_ssid)
+        wifi_password = config.get("password", wifi_password)
+        server_ip = config.get("server_ip", server_ip)
+except Exception as e:
+    print("Could not load wifi_config.json, using defaults:", e)
+
+server_url = "http://{}:8000".format(server_ip)
+
+def connect_wifi():
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    if not wlan.isconnected():
+        print("Connecting to Wi-Fi: {}...".format(wifi_ssid))
+        wlan.connect(wifi_ssid, wifi_password)
+        for _ in range(20):
+            if wlan.isconnected():
+                break
+            sleep(0.5)
+    if wlan.isconnected():
+        print("Wi-Fi Connected! IP Address:", wlan.ifconfig()[0])
+        lcd.clear()
+        lcd.move_to(0, 0)
+        lcd.putstr("WiFi Connected!")
+        lcd.move_to(0, 1)
+        lcd.putstr(wlan.ifconfig()[0])
+        sleep(2.0)
+        return True
+    else:
+        print("Wi-Fi Connection Failed!")
+        lcd.clear()
+        lcd.move_to(0, 0)
+        lcd.putstr("WiFi Connect Fail")
+        lcd.move_to(0, 1)
+        lcd.putstr("Check wifi_config")
+        sleep(3.0)
+        return False
+
+# 와이파이 연결 시도
+connect_wifi()
+
+# BLESimplePeripheral을 대체하는 Wi-Fi 버퍼 클래스
+class WiFiBuffer:
+    def __init__(self):
+        self.buffer = []
+    
+    def send(self, data):
+        self.buffer.append(data)
+        print("Buffered to send:", data.strip())
+        # 즉시 전송이 필요한 이벤트는 바로 플러시
+        if any(event in data for event in ["owner_call", "play_", "snack_"]):
+            flush_buffer()
+
+p = WiFiBuffer()
+
+def flush_buffer():
+    if not p.buffer:
+        return
+    data_to_send = "".join(p.buffer)
+    p.buffer.clear()
+    try:
+        res = urequests.post(server_url + "/api/esp/sensors", data=data_to_send)
+        res.close()
+    except Exception as e:
+        print("Failed to send sensors:", e)
+
+def poll_commands():
+    try:
+        res = urequests.get(server_url + "/api/esp/commands")
+        if res.status_code == 200:
+            commands = res.json()
+            res.close()
+            for cmd in commands:
+                on_rx(cmd)
+        else:
+            res.close()
+    except Exception as e:
+        print("Failed to poll commands:", e)
 
 def on_rx(v):
     global light_toggle_active
@@ -648,6 +732,11 @@ while True:
 
     # 1초에 한 번만 (0.05초 * 20번 = 1초) 센서 측정, 화면 출력, 타이머 연산 등을 수행
     loop_count += 1
+    
+    # 0.5초(10틱)마다 웹 대시보드의 원격 제어 명령 수신
+    if loop_count % 10 == 0:
+        poll_commands()
+        
     if loop_count >= 20:
         loop_count = 0
 
@@ -731,5 +820,8 @@ while True:
                 prev_lcd_line1 = line1
         except Exception as e:
             print("LCD write error:", e)
+
+        # 1초 주기로 수집된 센서 데이터를 서버로 전송
+        flush_buffer()
 
     sleep(0.05)
