@@ -1155,6 +1155,13 @@
 
         // 상대방이 보낸 SDP 정보(Offer 또는 Answer) 처리
         async function handleRemoteSDP(sdp) {
+            const isOffer = sdp.type === "offer" || (sdp.sdp && sdp.type === "offer");
+            if (isOffer && pc) {
+                log("새로운 연결 요청(Offer) 수신 - 기존 PeerConnection 초기화", "system");
+                pc.close();
+                pc = null;
+            }
+            
             const peer = createPeerConnection();
             if (peer.signalingState === "stable") return;
             
@@ -1302,9 +1309,11 @@
             try {
                 const peer = createPeerConnection();
                 
-                // 펫캠은 단방향이므로 노트북 카메라를 켜지 않습니다!
-                // 비디오를 받기 위해 offerToReceiveVideo 옵션을 지정합니다.
-                const offer = await peer.createOffer({ offerToReceiveVideo: true });
+                // 현대 WebRTC 스펙(Unified Plan)에 따라 수신 전용 트랜시버를 추가합니다.
+                // 이렇게 하면 노트북 웹캠을 켜지 않고도 강아지 카메라 영상을 정상 수신할 수 있습니다.
+                peer.addTransceiver('video', { direction: 'recvonly' });
+                
+                const offer = await peer.createOffer();
                 await peer.setLocalDescription(offer);
                 
                 // isCall: false 를 SDP와 함께 포장하여 송신
