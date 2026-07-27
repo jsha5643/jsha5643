@@ -527,6 +527,9 @@ class WiFiBuffer:
         if any(event in data for event in ["owner_call", "play_", "snack_"]):
             flush_buffer()
 
+    def on_write(self, callback):
+        pass
+
 p = WiFiBuffer()
 
 def flush_buffer():
