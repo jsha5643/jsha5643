@@ -472,10 +472,15 @@
             <i class="fa-solid fa-house-laptop"></i>
         </div>
         <div class="overlay-title">준석의 스마트홈</div>
-        <div class="overlay-desc">스마트독 스위트 시스템을 와이파이(Wi-Fi)로 연동해 안전하고 쾌적하게 펫 호텔을 관리하세요.</div>
-        <button id="connect-btn" class="btn btn-primary" style="width: 200px; padding: 16px 20px; border-radius: 20px; font-size: 1rem;">
-            <i class="fa-solid fa-wifi"></i> 와이파이 연결
-        </button>
+        <div class="overlay-desc">연동 방식을 선택해 주세요. 스마트폰은 블루투스, 노트북은 와이파이 연동을 권장합니다.</div>
+        <div style="display: flex; gap: 16px; margin-top: 10px;">
+            <button id="connect-ble-btn" class="btn btn-primary" style="padding: 16px 20px; border-radius: 20px; font-size: 1rem; flex: 1;">
+                <i class="fa-solid fa-bluetooth"></i> 블루투스 연결
+            </button>
+            <button id="connect-wifi-btn" class="btn btn-primary" style="padding: 16px 20px; border-radius: 20px; font-size: 1rem; flex: 1; background-color: #3b82f6; border-color: #3b82f6;">
+                <i class="fa-solid fa-wifi"></i> 와이파이 연결
+            </button>
+        </div>
     </div>
 
     <!-- 화상 통화 수신/연결 모달 -->
@@ -702,9 +707,11 @@
         let bleDevice = null;
         let rxCharacteristic = null;
         let txCharacteristic = null;
+        let connectionMode = null; // 'ble' or 'wifi'
 
         // UI 요소 캐싱
-        const connectBtn = document.getElementById('connect-btn');
+        const connectBleBtn = document.getElementById('connect-ble-btn');
+        const connectWifiBtn = document.getElementById('connect-wifi-btn');
         const overlay = document.getElementById('connection-overlay');
         const headerStatus = document.getElementById('header-status');
         const terminal = document.getElementById('terminal');
@@ -745,6 +752,73 @@
             el.classList.add('active');
         }
 
+        // BLE 연결 핸들러
+        async function connectBLE() {
+            log('블루투스 장치를 탐색하는 중...', 'system');
+            
+            // 아이폰 Safari/Chrome의 Web BLE 미지원 방어벽
+            if (!navigator.bluetooth) {
+                const errMsg = "현재 브라우저는 블루투스 기능을 지원하지 않습니다.\n아이폰 유저는 반드시 다운로드받으신 'Bluefy' 브라우저 앱을 실행하고 주소를 입력해 접속해 주세요!";
+                log(errMsg, "danger");
+                alert(errMsg);
+                return;
+            }
+            
+            try {
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{
+                        services: [NUS_SERVICE_UUID],
+                        namePrefix: 'ESP_'
+                    }]
+                });
+
+                log(`장치 발견: ${bleDevice.name}. 연결 중...`, 'system');
+                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+                const server = await bleDevice.gatt.connect();
+                log('GATT 서버 연결 완료. 서비스 검색 중...', 'system');
+
+                const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+                log('NUS 서비스 획득. 캐릭터리스틱 검색 중...', 'system');
+
+                rxCharacteristic = await service.getCharacteristic(NUS_RX_CHARACTERISTIC_UUID);
+                txCharacteristic = await service.getCharacteristic(NUS_TX_CHARACTERISTIC_UUID);
+
+                // 데이터 수신 리스너 등록
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleBLENotifications);
+
+                // 연결 성공 UI 반영
+                log('통신 채널이 생성되었습니다. 연결 성공!', 'system');
+                connectionMode = 'ble';
+                overlay.classList.add('hidden');
+                headerStatus.className = 'status-badge connected';
+                headerStatus.querySelector('span').textContent = bleDevice.name;
+
+                // 시간 동기화 커맨드 전송
+                setTimeout(sendTimeSync, 1000);
+
+            } catch (error) {
+                log(`에러: ${error.message}`, 'danger');
+                console.error(error);
+            }
+        }
+
+        // BLE 수신 패킷 처리 함수
+        function handleBLENotifications(event) {
+            const value = event.target.value;
+            const decoder = new TextDecoder('utf-8');
+            const dataStr = decoder.decode(value).trim();
+            if (dataStr) {
+                const lines = dataStr.split('\n');
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        handleWiFiNotifications(line.trim());
+                    }
+                });
+            }
+        }
+
         // Wi-Fi 연결 핸들러
         async function connectWiFi() {
             log('와이파이 제어 서버에 연결하는 중...', 'system');
@@ -753,6 +827,7 @@
                 const res = await fetch(`${signalingHost}/api/web/sensors`);
                 if (res.status === 200) {
                     log('와이파이 제어 서버에 성공적으로 연동되었습니다!', 'system');
+                    connectionMode = 'wifi';
                     overlay.classList.add('hidden');
                     headerStatus.className = 'status-badge connected';
                     headerStatus.querySelector('span').textContent = '온라인 (Wi-Fi)';
@@ -846,21 +921,38 @@
             valTimer.textContent = formatted;
         }
 
-        // Wi-Fi 커맨드 전송 함수
+        // 통합 커맨드 전송 함수
         async function sendCommand(cmdStr) {
-            try {
-                const res = await fetch(`${signalingHost}/api/web/command`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-                    body: cmdStr
-                });
-                if (res.status === 200) {
-                    log(`송신 ➔ ${cmdStr}`, 'tx');
-                } else {
-                    throw new Error(`HTTP 상태 코드 ${res.status}`);
+            if (connectionMode === 'ble') {
+                if (!rxCharacteristic) {
+                    log('보드에 블루투스로 연결되어 있지 않습니다.', 'system');
+                    return;
                 }
-            } catch (error) {
-                log(`송신 실패: ${error.message}`, 'system');
+                try {
+                    const encoder = new TextEncoder('utf-8');
+                    const data = encoder.encode(cmdStr);
+                    await rxCharacteristic.writeValue(data);
+                    log(`송신(BLE) ➔ ${cmdStr}`, 'tx');
+                } catch (error) {
+                    log(`송신 실패: ${error.message}`, 'system');
+                }
+            } else if (connectionMode === 'wifi') {
+                try {
+                    const res = await fetch(`${signalingHost}/api/web/command`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+                        body: cmdStr
+                    });
+                    if (res.status === 200) {
+                        log(`송신(Wi-Fi) ➔ ${cmdStr}`, 'tx');
+                    } else {
+                        throw new Error(`HTTP 상태 코드 ${res.status}`);
+                    }
+                } catch (error) {
+                    log(`송신 실패: ${error.message}`, 'system');
+                }
+            } else {
+                log('연결이 설정되지 않았습니다.', 'system');
             }
         }
 
@@ -1213,11 +1305,19 @@
 
         // 연결 해제 처리
         function disconnect() {
-            log('서버 연동을 종료했습니다.', 'system');
+            log('연동을 종료했습니다.', 'system');
             if (sensorsInterval) {
                 clearInterval(sensorsInterval);
                 sensorsInterval = null;
             }
+            if (bleDevice && bleDevice.gatt.connected) {
+                try {
+                    bleDevice.gatt.disconnect();
+                } catch (e) {
+                    console.error("BLE disconnect error:", e);
+                }
+            }
+            connectionMode = null;
             overlay.classList.remove('hidden');
             headerStatus.className = 'status-badge disconnected';
             headerStatus.querySelector('span').textContent = '연결 안됨';
@@ -1229,8 +1329,14 @@
             valTimer.textContent = '--:--:--';
         }
 
+        function onDisconnected() {
+            log('블루투스 연결이 해제되었습니다.', 'system');
+            disconnect();
+        }
+
         // UI 버튼 리스너 등록
-        connectBtn.addEventListener('click', connectWiFi);
+        connectBleBtn.addEventListener('click', connectBLE);
+        connectWifiBtn.addEventListener('click', connectWiFi);
         document.getElementById('disconnect-btn-main').addEventListener('click', disconnect);
 
         // 1. 센서 리프레시 버튼
