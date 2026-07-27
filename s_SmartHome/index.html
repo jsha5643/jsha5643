@@ -1219,24 +1219,12 @@
                                 audio: false
                             });
                         }
-                        // WebRTC Unified Plan 트랙 매칭 최적화 (수신 전용 트랜시버가 이미 있다면 송신용으로 재사용 설정)
-                        if (localStream) {
-                            const videoTrack = localStream.getVideoTracks()[0];
-                            if (videoTrack) {
-                                const videoTransceiver = peer.getTransceivers().find(t => t.receiver.track.kind === 'video');
-                                if (videoTransceiver) {
-                                    await videoTransceiver.sender.replaceTrack(videoTrack);
-                                    videoTransceiver.direction = 'sendonly';
-                                    log("기존 수신 트랜시버를 송신용으로 재사용 설정 완료", "system");
-                                } else {
-                                    const senders = peer.getSenders();
-                                    const hasVideoSender = senders.some(s => s.track && s.track.kind === 'video');
-                                    if (!hasVideoSender) {
-                                        peer.addTrack(videoTrack, localStream);
-                                        log("새로운 비디오 트랙 추가 완료", "system");
-                                    }
-                                }
-                            }
+                        // 기존 peer connection에 트랙이 추가되었는지 확인 후 없으면 추가
+                        const senders = peer.getSenders();
+                        const hasVideoSender = senders.some(s => s.track && s.track.kind === 'video');
+                        if (!hasVideoSender && localStream) {
+                            localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+                            log("비디오 트랙 추가 완료", "system");
                         }
                         
                         const answer = await peer.createAnswer();
@@ -1334,11 +1322,8 @@
             try {
                 const peer = createPeerConnection();
                 
-                // 현대 WebRTC 스펙(Unified Plan)에 따라 수신 전용 트랜시버를 추가합니다.
-                // 이렇게 하면 노트북 웹캠을 켜지 않고도 강아지 카메라 영상을 정상 수신할 수 있습니다.
-                peer.addTransceiver('video', { direction: 'recvonly' });
-                
-                const offer = await peer.createOffer();
+                // 주인의 웹캠 스트림은 보내지 않고, 비디오 데이터 수신을 위해 수신 대기 설정
+                const offer = await peer.createOffer({ offerToReceiveVideo: true });
                 await peer.setLocalDescription(offer);
                 
                 // isCall: false 를 SDP와 함께 포장하여 송신
