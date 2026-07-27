@@ -983,6 +983,7 @@
         let localStream = null;
         let petCamStream = null;
         let pc = null;
+        let remoteCandidatesQueue = [];
         let signalingInterval = null;
         let audioCtx = null;
         let ringInterval = null;
@@ -1087,6 +1088,19 @@
             
             await peer.setRemoteDescription(new RTCSessionDescription(sdp));
             
+            // remote description이 설정되었으므로 대기 중이던 후보들을 모두 추가합니다
+            if (remoteCandidatesQueue.length > 0) {
+                log(`대기 중인 ICE 후보 ${remoteCandidatesQueue.length}개 추가 시작`, "system");
+                for (const cand of remoteCandidatesQueue) {
+                    try {
+                        await peer.addIceCandidate(new RTCIceCandidate(cand));
+                    } catch (e) {
+                        console.error("Error adding queued ice candidate:", e);
+                    }
+                }
+                remoteCandidatesQueue = [];
+            }
+            
             if (sdp.type === "offer") {
                 if (myRole === "dog") {
                     // 강아지 폰은 주인이 펫캠을 요청하거나 전화를 걸었을 때 자동으로 전면 카메라를 켜서 릴레이!
@@ -1128,6 +1142,11 @@
 
         async function handleRemoteCandidates(candidates) {
             const peer = createPeerConnection();
+            if (!peer.remoteDescription) {
+                // remoteDescription이 아직 설정되지 않았다면 큐에 보관합니다
+                remoteCandidatesQueue.push(...candidates);
+                return;
+            }
             for (const cand of candidates) {
                 try {
                     await peer.addIceCandidate(new RTCIceCandidate(cand));
@@ -1292,6 +1311,7 @@
         // WebRTC 데이터 리셋 함수
         async function resetWebRTC() {
             stopRingSound();
+            remoteCandidatesQueue = [];
             
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
