@@ -26,6 +26,10 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
+    def log_message(self, format, *args):
+        # 터미널 로그 출력을 비활성화하여 화면이 더러워지는 것을 방지합니다
+        pass
+
     def do_GET(self):
         global signals, latest_sensors_data, esp_commands
         if self.path.startswith("/api/esp/commands"):
