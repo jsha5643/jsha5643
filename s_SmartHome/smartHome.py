@@ -480,6 +480,11 @@ server_url = "http://{}:8000".format(server_ip)
 
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
+    try:
+        wlan.active(False)
+        sleep(0.5)
+    except:
+        pass
     wlan.active(True)
     if not wlan.isconnected():
         print("Connecting to Wi-Fi: {}...".format(wifi_ssid))
