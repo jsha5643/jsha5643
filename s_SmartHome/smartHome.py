@@ -15,7 +15,7 @@ cds.atten(ADC.ATTN_11DB)
 
 # 서보 모터 초기화 (Servo Pin 13)
 motor = Servo(pin=13)
-motor.move(180) # 180도 대기(폐쇄) 설정
+motor.move(90) # 90도 정렬 설정
 
 # 피에조 부저 초기화 (PWM Pin 23)
 piezo = PWM(Pin(23))
@@ -115,9 +115,9 @@ def sync_time(time_str):
 def trigger_feeding():
     global feed_seconds
     print("Feeding started...")
-    motor.move(90)
-    sleep(1.5)
-    motor.move(180)
+    motor.move(180) # 180도로 이동
+    sleep(5)        # 5초간 대기
+    motor.move(90)  # 다시 원래대로(90도) 복귀
     
     # 급식 성공 알림음 연주
     piezo.duty_u16(1000)
