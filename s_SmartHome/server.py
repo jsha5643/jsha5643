@@ -33,6 +33,7 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             response_data = json.dumps(esp_commands).encode('utf-8')
             self.send_header('Content-Length', str(len(response_data)))
+            self.send_header('Connection', 'close')
             self.end_headers()
             self.wfile.write(response_data)
             esp_commands.clear()
@@ -42,6 +43,7 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'text/plain; charset=utf-8')
             response_data = latest_sensors_data.encode('utf-8')
             self.send_header('Content-Length', str(len(response_data)))
+            self.send_header('Connection', 'close')
             self.end_headers()
             self.wfile.write(response_data)
             return
@@ -91,6 +93,7 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-Length', '2')
+            self.send_header('Connection', 'close')
             self.end_headers()
             self.wfile.write(b"OK")
             return
@@ -106,6 +109,7 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-Length', '2')
+            self.send_header('Connection', 'close')
             self.end_headers()
             self.wfile.write(b"OK")
             return
