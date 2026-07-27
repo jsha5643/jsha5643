@@ -500,6 +500,8 @@
             <video id="dog-mini-preview" autoplay playsinline muted style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index: 2; transform: scaleX(-1);"></video>
         </div>
         <h2 style="font-size:1.6rem; font-weight:700;">댕댕이 펫캠 모드</h2>
+        <!-- 프레임 캡처용 숨겨진 캔버스 -->
+        <canvas id="dog-capture-canvas" style="display:none;"></canvas>
         <p style="font-size:0.95rem; color:#94a3b8; text-align:center; max-width:280px; line-height:1.6;">
             주인의 연결을 기다리고 있습니다.<br>화면을 켜둔 채로 고정해 주세요.
         </p>
@@ -614,7 +616,8 @@
             <div class="card">
                 <div class="card-title">실시간 펫-캠 모니터</div>
                 <div id="pet-cam-preview-container" style="width: 100%; height: 200px; border-radius: 18px; overflow: hidden; background: #0f172a; position: relative; box-shadow: var(--shadow-in); border: 1px solid rgba(255,255,255,0.1);">
-                    <video id="pet-cam-preview" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    <!-- 릴레이 방식: video 대신 img로 JPEG 프레임 표시 -->
+                    <img id="pet-cam-relay-img" src="" style="display:none; width: 100%; height: 100%; object-fit: cover;" />
                     <div id="pet-cam-placeholder" style="position: absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#64748b; gap:8px; font-size:0.85rem; font-weight:600;">
                         <i class="fa-solid fa-video-slash" style="font-size:2.2rem; color: #475569;"></i>
                         <span>펫캠이 꺼져 있습니다.</span>
@@ -1057,6 +1060,11 @@
         };
 
         // 강아지 모드로 설정 시 사용자의 터치 제스처 범위 내에서 미리 카메라 권한 및 스트림 획득!
+        // =========================================================
+        // 릴레이 방식 펫캠 (WebRTC 대신 JPEG 프레임 HTTP 릴레이)
+        // =========================================================
+        let frameRelayInterval = null;
+
         async function startDogCameraPreemptive() {
             log("카메라 미리 획득 시도...", "system");
             try {
@@ -1066,20 +1074,53 @@
                 }
                 
                 localStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "user" },
+                    video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
                     audio: false
                 });
-                log("카메라 획득 성공!", "system");
+                log("카메라 획득 성공! 프레임 릴레이 시작...", "system");
                 
                 const miniPreview = document.getElementById('dog-mini-preview');
                 if (miniPreview) {
                     miniPreview.srcObject = localStream;
                     miniPreview.style.display = 'block';
                 }
+                
+                // 캔버스로 프레임 캡처해서 서버로 전송
+                startFrameRelay();
             } catch (err) {
                 console.error("Preemptive camera startup failed:", err);
                 log("카메라 획득 실패: " + err.message, "danger");
             }
+        }
+
+        function startFrameRelay() {
+            if (frameRelayInterval) clearInterval(frameRelayInterval);
+            
+            const canvas = document.getElementById('dog-capture-canvas');
+            const ctx = canvas.getContext('2d');
+            const video = document.getElementById('dog-mini-preview');
+            
+            frameRelayInterval = setInterval(async () => {
+                if (!localStream || !video || video.readyState < 2) return;
+                
+                try {
+                    canvas.width = 320;
+                    canvas.height = 240;
+                    ctx.save();
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, -320, 0, 320, 240);
+                    ctx.restore();
+                    const frameData = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    await fetch(`${signalingHost}/api/post_frame`, {
+                        method: 'POST',
+                        headers: { 'Bypass-Tunnel-Reminder': 'true' },
+                        body: frameData
+                    });
+                } catch (e) {
+                    // 릴레이 오류 무시 (계속 재시도)
+                }
+            }, 150); // 초당 약 6프레임
         }
 
         // 기기 역할 강제 지정 함수
@@ -1355,54 +1396,51 @@
             }
         }
 
+        // ---- 주인(노트북)용: 서버에서 프레임 폴링하여 img에 표시 ----
+        let ownerFramePollInterval = null;
+
         async function autoTriggerPetCam() {
-            if (pc) return;
-            
             const btn = document.getElementById('btn-toggle-petcam');
-            const preview = document.getElementById('pet-cam-preview');
+            const relayImg = document.getElementById('pet-cam-relay-img');
+            const placeholder = document.getElementById('pet-cam-placeholder');
             
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>원격 자동 연결 중...</span>';
-            showStatusOrError("강아지 카메라 연결 요청 중...");
+            btn.className = "btn btn-danger";
+            btn.innerHTML = '<i class="fa-solid fa-video-slash"></i> <span>실시간 펫캠 끄기</span>';
+            placeholder.style.display = 'none';
+            relayImg.style.display = 'block';
             
-            try {
-                const peer = createPeerConnection();
-                
-                // 주인의 웹캠 스트림은 보내지 않고, 비디오 데이터 수신을 위해 수신 대기 설정
-                const offer = await peer.createOffer({ offerToReceiveVideo: true });
-                await peer.setLocalDescription(offer);
-                
-                // isCall: false 를 SDP와 함께 포장하여 송신
-                await fetch(`${signalingHost}/api/send_sdp`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Bypass-Tunnel-Reminder': 'true'
-                    },
-                    body: JSON.stringify({ 
-                        role: myRole, 
-                        sdp: { type: offer.type, sdp: offer.sdp, isCall: false } 
-                    })
-                });
-                
-                log("강아지 카메라로 펫캠 영상 송출을 요청했습니다. (단방향 모니터링)", "system");
-                btn.className = "btn btn-danger";
-                btn.innerHTML = '<i class="fa-solid fa-video-slash"></i> <span>실시간 펫캠 끄기</span>';
-            } catch (err) {
-                console.error("Auto Petcam connection error:", err);
-                resetWebRTC();
-            }
+            log("릴레이 방식 펫캠 시작! 스마트폰 카메라 화면을 수신합니다...", "system");
+            
+            if (ownerFramePollInterval) clearInterval(ownerFramePollInterval);
+            ownerFramePollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${signalingHost}/api/get_frame?t=${Date.now()}`, {
+                        headers: { 'Bypass-Tunnel-Reminder': 'true' }
+                    });
+                    const data = await res.json();
+                    if (data.frame && data.frame.length > 100) {
+                        relayImg.src = data.frame;
+                    }
+                } catch (e) {
+                    // 폴링 실패 무시
+                }
+            }, 150);
         }
 
         async function togglePetCam() {
-            if (pc) {
-                stopAutoPetCamLoop();
-                resetWebRTC();
+            if (ownerFramePollInterval) {
+                // 켜져있으면 끄기
+                clearInterval(ownerFramePollInterval);
+                ownerFramePollInterval = null;
                 
                 const btn = document.getElementById('btn-toggle-petcam');
                 btn.className = "btn btn-primary";
                 btn.innerHTML = '<i class="fa-solid fa-video"></i> <span>실시간 펫캠 켜기</span>';
+                document.getElementById('pet-cam-relay-img').style.display = 'none';
                 document.getElementById('pet-cam-placeholder').style.display = "flex";
+                log("펫캠을 껐습니다.", "system");
             } else {
+                // 꺼져있으면 켜기
                 startAutoPetCamLoop();
             }
         }
