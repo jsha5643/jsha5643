@@ -601,7 +601,7 @@
             <div class="card">
                 <div class="card-title">실시간 펫-캠 모니터</div>
                 <div id="pet-cam-preview-container" style="width: 100%; height: 200px; border-radius: 18px; overflow: hidden; background: #0f172a; position: relative; box-shadow: var(--shadow-in); border: 1px solid rgba(255,255,255,0.1);">
-                    <video id="pet-cam-preview" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    <video id="pet-cam-preview" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
                     <div id="pet-cam-placeholder" style="position: absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#64748b; gap:8px; font-size:0.85rem; font-weight:600;">
                         <i class="fa-solid fa-video-slash" style="font-size:2.2rem; color: #475569;"></i>
                         <span>펫캠이 꺼져 있습니다.</span>
@@ -1125,7 +1125,21 @@
             if (peer.signalingState === "stable") return;
             
             // sdp.sdp와 sdp.type을 이용하여 RTCSessionDescription 생성
-            await peer.setRemoteDescription(new RTCSessionDescription({ type: sdp.type || sdp.type, sdp: sdp.sdp || sdp }));
+            try {
+                let sdpObj;
+                if (sdp && sdp.sdp) {
+                    sdpObj = new RTCSessionDescription({ type: sdp.type, sdp: sdp.sdp });
+                } else if (sdp) {
+                    sdpObj = new RTCSessionDescription(sdp);
+                } else {
+                    throw new Error("sdp payload is empty");
+                }
+                await peer.setRemoteDescription(sdpObj);
+            } catch (e) {
+                console.error("setRemoteDescription failed:", e);
+                log("SDP 설정 오류: " + e.message, "danger");
+                return;
+            }
             
             // remote description이 설정되었으므로 대기 중이던 후보들을 모두 추가합니다
             if (remoteCandidatesQueue.length > 0) {
@@ -1217,9 +1231,16 @@
             autoTriggerPetCam();
             
             autoPetCamInterval = setInterval(() => {
-                if (myRole === 'owner' && !pc) {
-                    log("원격 펫캠 자동 연결 재시도 중...", "system");
-                    autoTriggerPetCam();
+                if (myRole === 'owner') {
+                    // pc가 없거나, 연결 상태가 좋지 않으면 (failed, disconnected) 재시도
+                    const needsReconnect = !pc || 
+                                           pc.iceConnectionState === 'failed' || 
+                                           pc.iceConnectionState === 'disconnected';
+                    if (needsReconnect) {
+                        log("원격 펫캠 재연결 시도...", "system");
+                        resetWebRTC();
+                        autoTriggerPetCam();
+                    }
                 }
             }, 5000);
         }
