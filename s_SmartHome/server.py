@@ -31,15 +31,19 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
         if self.path.startswith("/api/esp/commands"):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
+            response_data = json.dumps(esp_commands).encode('utf-8')
+            self.send_header('Content-Length', str(len(response_data)))
             self.end_headers()
-            self.wfile.write(json.dumps(esp_commands).encode('utf-8'))
+            self.wfile.write(response_data)
             esp_commands.clear()
             return
         elif self.path.startswith("/api/web/sensors"):
             self.send_response(200)
             self.send_header('Content-type', 'text/plain; charset=utf-8')
+            response_data = latest_sensors_data.encode('utf-8')
+            self.send_header('Content-Length', str(len(response_data)))
             self.end_headers()
-            self.wfile.write(latest_sensors_data.encode('utf-8'))
+            self.wfile.write(response_data)
             return
         elif self.path.startswith("/api/get_signal"):
             # 역할에 따른 상대방의 시그널 데이터 및 Candidate 가져오기
@@ -85,6 +89,8 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
         if self.path == "/api/esp/sensors":
             latest_sensors_data = post_data.decode('utf-8')
             self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
+            self.send_header('Content-Length', '2')
             self.end_headers()
             self.wfile.write(b"OK")
             return
@@ -98,6 +104,8 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             if cmd:
                 esp_commands.append(cmd)
             self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
+            self.send_header('Content-Length', '2')
             self.end_headers()
             self.wfile.write(b"OK")
             return
