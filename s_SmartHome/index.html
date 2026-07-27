@@ -406,6 +406,10 @@
             font-weight: bold;
             animation: pulse-alert 1.5s infinite alternate;
         }
+        .terminal-line.success {
+            color: #10b981; /* Green for success logs */
+            font-weight: bold;
+        }
 
         /* 하단 탭 바 내비게이션 */
         .tab-bar {
@@ -1136,6 +1140,13 @@
                 }
             };
             
+            pc.oniceconnectionstatechange = () => {
+                log(`ICE Connection State: ${pc.iceConnectionState}`, "system");
+                if (pc.iceConnectionState === 'connected') {
+                    log("WebRTC 연결에 성공했습니다!", "success");
+                }
+            };
+            
             pc.onicecandidate = async (event) => {
                 if (event.candidate) {
                     // 생성된 ICE 후보를 서버로 전송
@@ -1208,10 +1219,24 @@
                                 audio: false
                             });
                         }
-                        // 기존 peer connection에 트랙이 추가되었는지 확인 후 없으면 추가
-                        const senders = peer.getSenders();
-                        if (senders.length === 0 && localStream) {
-                            localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+                        // WebRTC Unified Plan 트랙 매칭 최적화 (수신 전용 트랜시버가 이미 있다면 송신용으로 재사용 설정)
+                        if (localStream) {
+                            const videoTrack = localStream.getVideoTracks()[0];
+                            if (videoTrack) {
+                                const videoTransceiver = peer.getTransceivers().find(t => t.receiver.track.kind === 'video');
+                                if (videoTransceiver) {
+                                    await videoTransceiver.sender.replaceTrack(videoTrack);
+                                    videoTransceiver.direction = 'sendonly';
+                                    log("기존 수신 트랜시버를 송신용으로 재사용 설정 완료", "system");
+                                } else {
+                                    const senders = peer.getSenders();
+                                    const hasVideoSender = senders.some(s => s.track && s.track.kind === 'video');
+                                    if (!hasVideoSender) {
+                                        peer.addTrack(videoTrack, localStream);
+                                        log("새로운 비디오 트랙 추가 완료", "system");
+                                    }
+                                }
+                            }
                         }
                         
                         const answer = await peer.createAnswer();
