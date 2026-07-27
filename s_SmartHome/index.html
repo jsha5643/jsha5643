@@ -506,7 +506,11 @@
         <button id="btn-start-dog-cam" style="background:#38bdf8; color:#0f172a; border:none; padding:12px 28px; border-radius:50px; font-size:1rem; font-weight:700; cursor:pointer; box-shadow: 0 4px 15px rgba(56,189,248,0.4); margin-top:10px;">
             <i class="fa-solid fa-camera" style="margin-right:8px;"></i> 카메라 켜고 연동 시작
         </button>
-        <button onclick="setDeviceRole('owner')" style="margin-top:30px; background:rgba(255,255,255,0.08); color:#94a3b8; border:1px solid rgba(255,255,255,0.15); padding:10px 20px; border-radius:14px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+        <!-- 강아지 모드 디버그 로그 표시 영역 -->
+        <div id="dog-debug-log" style="width:100%; max-width:320px; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; font-family:monospace; font-size:0.75rem; color:#a7f3d0; margin-top:20px; border:1px solid rgba(255,255,255,0.1); text-align:left; line-height:1.4;">
+            <div>[system] 디버그 로그 대기 중...</div>
+        </div>
+        <button onclick="setDeviceRole('owner')" style="margin-top:20px; background:rgba(255,255,255,0.08); color:#94a3b8; border:1px solid rgba(255,255,255,0.15); padding:10px 20px; border-radius:14px; font-size:0.8rem; font-weight:600; cursor:pointer;">
             주인 모드로 전환
         </button>
     </div>
@@ -766,6 +770,16 @@
             line.textContent = `[${now}] ${message}`;
             terminal.appendChild(line);
             terminal.scrollTop = terminal.scrollHeight;
+            
+            // 강아지 모드 대기 화면의 디버그 로그 보드에도 동시 출력
+            const dogDebug = document.getElementById('dog-debug-log');
+            if (dogDebug) {
+                const dogLine = document.createElement('div');
+                dogLine.style.color = type === 'danger' ? '#f87171' : (type === 'success' ? '#34d399' : '#a7f3d0');
+                dogLine.textContent = `[${now}] ${message}`;
+                dogDebug.appendChild(dogLine);
+                dogDebug.scrollTop = dogDebug.scrollHeight;
+            }
         }
 
         // 탭 전환 기능
@@ -1586,6 +1600,8 @@
         
         // 페이지 로딩 시 자동으로 시널링 폴링 가동
         startSignalingPolling();
+        
+        log("접속 프로토콜: " + window.location.protocol, "system");
         
         // 모바일 기기 감지 (아이폰, 안드로이드 등 스마트폰이면 강아지 모드로 기본 기동)
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
