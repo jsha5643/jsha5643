@@ -918,8 +918,6 @@
 
         // 수신 센서 데이터 처리 함수
         function handleWiFiNotifications(dataStr) {
-            log(`수신 ➔ ${dataStr}`, 'rx');
-
             // 1. 개별 상태 메시지 분기 처리
             if (dataStr.includes('temp :')) {
                 const temp = dataStr.split(':')[1].trim();
