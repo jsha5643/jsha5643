@@ -1131,6 +1131,7 @@
                         
                         // 강아지 액정 화면에 통화 모달 팝업 가동
                         document.getElementById('pet-call-modal').style.display = 'flex';
+                        document.getElementById('video-call-container').style.display = 'block';
                         document.getElementById('call-status-label').textContent = "주인과 연결되었습니다!";
                         document.getElementById('btn-call-accept').style.display = 'none'; // 강아지 화면에선 수락버튼 필요없음
                     } catch (err) {
@@ -1184,8 +1185,14 @@
                     }
                     const peer = createPeerConnection();
                     
-                    // 주인의 웹캠 스트림은 보내지 않고, 비디오 데이터 수신을 위해 수신 대기 설정
-                    const offer = await peer.createOffer({ offerToReceiveVideo: true });
+                    // 노트북 웹캠 활성화 (주인 얼굴 송출용)
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "user" },
+                        audio: false
+                    });
+                    localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+                    
+                    const offer = await peer.createOffer();
                     await peer.setLocalDescription(offer);
                     
                     await fetch(`${signalingHost}/api/send_sdp`, {
@@ -1197,7 +1204,7 @@
                         body: JSON.stringify({ role: myRole, sdp: offer })
                     });
                     
-                    log("강아지 카메라로 펫캠 영상 송출을 요청했습니다.", "system");
+                    log("강아지 카메라로 펫캠 영상 송출을 요청했습니다. (양방향 연결)", "system");
                 } catch (err) {
                     console.error("Petcam connection error:", err);
                     resetWebRTC();
