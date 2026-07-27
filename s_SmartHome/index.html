@@ -865,8 +865,8 @@
         async function connectWiFi() {
             log('와이파이 제어 서버에 연결하는 중...', 'system');
             try {
-                // 서버에 테스트 요청을 날려 상태를 체크합니다
-                const res = await fetch(`${signalingHost}/api/web/sensors`, {
+                // 서버에 테스트 요청을 날려 상태를 체크합니다 (캐시 방지 타임스탬프 추가)
+                const res = await fetch(`${signalingHost}/api/web/sensors?t=${Date.now()}`, {
                     headers: { 'Bypass-Tunnel-Reminder': 'true' }
                 });
                 if (res.status === 200) {
@@ -895,7 +895,7 @@
             if (sensorsInterval) clearInterval(sensorsInterval);
             sensorsInterval = setInterval(async () => {
                 try {
-                    const res = await fetch(`${signalingHost}/api/web/sensors`, {
+                    const res = await fetch(`${signalingHost}/api/web/sensors?t=${Date.now()}`, {
                         headers: { 'Bypass-Tunnel-Reminder': 'true' }
                     });
                     if (res.status === 200) {
@@ -1132,7 +1132,8 @@
             if (signalingInterval) clearInterval(signalingInterval);
             signalingInterval = setInterval(async () => {
                 try {
-                    const res = await fetch(`${signalingHost}/api/get_signal?role=${myRole}`, {
+                    // 캐시 방지를 위해 고유 타임스탬프 파라미터를 추가하여 강제 조회
+                    const res = await fetch(`${signalingHost}/api/get_signal?role=${myRole}&t=${Date.now()}`, {
                         headers: { 'Bypass-Tunnel-Reminder': 'true' }
                     });
                     const data = await res.json();
