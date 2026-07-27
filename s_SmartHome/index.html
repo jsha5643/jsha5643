@@ -1085,7 +1085,7 @@
                 if (dogWaitingScreen) dogWaitingScreen.style.display = 'none';
                 
                 stopAutoPetCamLoop(); // 안전을 위해 기존 루프 정지
-                resetWebRTC();       // 기존 연결 및 강아지 카메라 정지
+                resetWebRTC(false);   // 노트북 주인 모드는 전체 리셋 진행
                 stopSignalingPolling();
                 startSignalingPolling();
                 startAutoPetCamLoop();
@@ -1098,7 +1098,7 @@
                 if (dogWaitingScreen) dogWaitingScreen.style.display = 'flex';
                 
                 stopAutoPetCamLoop();
-                resetWebRTC();
+                resetWebRTC(true);    // 강아지 모드는 로컬 리셋만 수행하여 주인의 Offer를 보호!
                 
                 // 강아지 모드로 설정 시 사용자의 터치 제스처 범위 내에서 미리 카메라 권한 및 스트림 획득!
                 startDogCameraPreemptive();
@@ -1498,7 +1498,7 @@
         }
 
         // WebRTC 데이터 리셋 함수
-        async function resetWebRTC() {
+        async function resetWebRTC(localOnly = false) {
             stopRingSound();
             remoteCandidatesQueue = [];
             
@@ -1543,11 +1543,13 @@
                 }
             }
             
-            try {
-                await fetch(`${signalingHost}/api/reset`, {
-                    headers: { 'Bypass-Tunnel-Reminder': 'true' }
-                });
-            } catch (e) {}
+            if (!localOnly) {
+                try {
+                    await fetch(`${signalingHost}/api/reset`, {
+                        headers: { 'Bypass-Tunnel-Reminder': 'true' }
+                    });
+                } catch (e) {}
+            }
         }
 
         // 통화 버튼 리스너 바인딩
@@ -1555,9 +1557,16 @@
         document.getElementById('btn-call-end').addEventListener('click', endCall);
         document.getElementById('btn-toggle-petcam').addEventListener('click', togglePetCam);
         
-        // 페이지 로딩 시 자동으로 시널링 폴링 및 주인 모드 펫캠 가동 시작
+        // 페이지 로딩 시 자동으로 시널링 폴링 가동
         startSignalingPolling();
-        setDeviceRole('owner');
+        
+        // 모바일 기기 감지 (아이폰, 안드로이드 등 스마트폰이면 강아지 모드로 기본 기동)
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            setDeviceRole('dog');
+        } else {
+            setDeviceRole('owner');
+        }
 
         // 연결 해제 처리
         function disconnect() {
