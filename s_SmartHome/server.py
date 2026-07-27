@@ -55,7 +55,15 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             return
         elif self.path.startswith("/api/get_signal"):
             # 역할에 따른 상대방의 시그널 데이터 및 Candidate 가져오기
-            role = self.path.split("role=")[-1]
+            # Query parameter 파싱 보완 (타임스탬프 등 다른 파라미터가 있어도 role을 정확히 추출)
+            query = self.path.split("?")[-1]
+            params = {}
+            for part in query.split("&"):
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                    params[k] = v
+            role = params.get("role", "")
+            
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
