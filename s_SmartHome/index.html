@@ -503,7 +503,10 @@
         <p style="font-size:0.95rem; color:#94a3b8; text-align:center; max-width:280px; line-height:1.6;">
             주인의 연결을 기다리고 있습니다.<br>화면을 켜둔 채로 고정해 주세요.
         </p>
-        <button onclick="setDeviceRole('owner')" style="margin-top:40px; background:rgba(255,255,255,0.08); color:#94a3b8; border:1px solid rgba(255,255,255,0.15); padding:10px 20px; border-radius:14px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+        <button id="btn-start-dog-cam" style="background:#38bdf8; color:#0f172a; border:none; padding:12px 28px; border-radius:50px; font-size:1rem; font-weight:700; cursor:pointer; box-shadow: 0 4px 15px rgba(56,189,248,0.4); margin-top:10px;">
+            <i class="fa-solid fa-camera" style="margin-right:8px;"></i> 카메라 켜고 연동 시작
+        </button>
+        <button onclick="setDeviceRole('owner')" style="margin-top:30px; background:rgba(255,255,255,0.08); color:#94a3b8; border:1px solid rgba(255,255,255,0.15); padding:10px 20px; border-radius:14px; font-size:0.8rem; font-weight:600; cursor:pointer;">
             주인 모드로 전환
         </button>
     </div>
@@ -1100,11 +1103,13 @@
                 stopAutoPetCamLoop();
                 resetWebRTC(true);    // 강아지 모드는 로컬 리셋만 수행하여 주인의 Offer를 보호!
                 
-                // 강아지 모드로 설정 시 사용자의 터치 제스처 범위 내에서 미리 카메라 권한 및 스트림 획득!
-                startDogCameraPreemptive();
+                // 대기 화면에 카메라 켜기 버튼 노출
+                const startBtn = document.getElementById('btn-start-dog-cam');
+                if (startBtn) {
+                    startBtn.style.display = 'inline-block';
+                }
                 
                 stopSignalingPolling();
-                startSignalingPolling();
             }
         }
 
@@ -1556,6 +1561,28 @@
         document.getElementById('btn-call-accept').addEventListener('click', acceptCall);
         document.getElementById('btn-call-end').addEventListener('click', endCall);
         document.getElementById('btn-toggle-petcam').addEventListener('click', togglePetCam);
+        
+        // 강아지 모드 전용 카메라 활성화 및 연동 개시 리스너
+        document.getElementById('btn-start-dog-cam').addEventListener('click', async () => {
+            // 카메라 활성화
+            await startDogCameraPreemptive();
+            
+            // 버튼 숨기기
+            document.getElementById('btn-start-dog-cam').style.display = 'none';
+            
+            // 시그널링 폴링 가동
+            stopSignalingPolling();
+            startSignalingPolling();
+            
+            // 강아지 대기 텍스트 변경
+            const dogMsg = document.getElementById('dog-waiting-screen');
+            if (dogMsg) {
+                const pTag = dogMsg.querySelector('p');
+                if (pTag) {
+                    pTag.innerHTML = "카메라가 활성화되었습니다.<br>주인의 연결을 기다리고 있습니다.";
+                }
+            }
+        });
         
         // 페이지 로딩 시 자동으로 시널링 폴링 가동
         startSignalingPolling();
