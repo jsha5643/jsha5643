@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>준석의 스마트홈 대시보드</title>
+  
+  <!-- CDNs for Tailwind CSS and Icons -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+
+  <!-- Tailwind Configuration -->
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-surface": "#dae2fd",
+            "tertiary-container": "#00a572",
+            "surface-bright": "#31394d",
+            "error-container": "#93000a",
+            "outline": "#8c909f",
+            "glass-surface": "rgba(15, 23, 42, 0.75)",
+            "glass-border": "rgba(255, 255, 255, 0.1)",
+            "on-tertiary": "#003824",
+            "secondary": "#bcc7de",
+            "surface-container-highest": "#2d3449",
+            "surface": "#0b1326",
+            "on-error": "#690005",
+            "error": "#ffb4ab",
+            "on-tertiary-fixed": "#002113",
+            "primary-container": "#4d8eff",
+            "primary": "#adc6ff",
+            "primary-fixed": "#d8e2ff",
+            "primary-fixed-dim": "#adc6ff",
+            "secondary-fixed-dim": "#bcc7de",
+            "outline-variant": "#424754",
+            "on-primary-container": "#00285d",
+            "on-tertiary-container": "#00311f",
+            "on-secondary-container": "#aeb9d0",
+            "surface-container-lowest": "#060e20",
+            "surface-container-high": "#222a3d",
+            "secondary-fixed": "#d8e3fb",
+            "tertiary": "#4edea3",
+            "secondary-container": "#3e495d",
+            "tertiary-fixed-dim": "#4edea3",
+            "on-secondary": "#263143",
+            "on-secondary-fixed": "#111c2d",
+            "on-surface": "#dae2fd",
+            "status-warning": "#F59E0B",
+            "on-error-container": "#ffdad6",
+            "on-secondary-fixed-variant": "#3c475a",
+            "surface-tint": "#adc6ff",
+            "status-error": "#EF4444",
+            "surface-container-low": "#131b2e",
+            "on-primary": "#002e6a",
+            "inverse-on-surface": "#283044",
+            "inverse-primary": "#005ac2",
+            "surface-container": "#171f33",
+            "on-primary-fixed-variant": "#004395",
+            "surface-variant": "#2d3449",
+            "background": "#0b1326",
+            "on-background": "#dae2fd",
+            "on-surface-variant": "#c2c6d6",
+            "on-primary-fixed": "#001a42",
+            "surface-dim": "#0b1326",
+            "on-tertiary-fixed-variant": "#005236",
+            "tertiary-fixed": "#6ffbbe",
+            "status-online": "#10B981"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "12px",
+            "card-padding": "20px",
+            "base": "4px",
+            "margin-mobile": "16px",
+            "container-max": "480px"
+          },
+          "fontFamily": {
+            "headline-md": ["Plus Jakarta Sans"],
+            "label-caps": ["JetBrains Mono"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "data-display": ["JetBrains Mono"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+            "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "data-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.05em", "fontWeight": "600"}],
+            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #0b1326;
+      color: #dae2fd;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .active-glow {
+      box-shadow: 0 0 20px rgba(173, 198, 255, 0.25);
+    }
+    .terminal-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .terminal-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+    }
+    @keyframes pulse-connection {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.85; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pulse-slow {
+      animation: pulse-connection 3s infinite ease-in-out;
+    }
+    .tab-section {
+      display: none;
+    }
+    .tab-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .terminal-line.sys { color: #8c909f; }
+    .terminal-line.tx { color: #adc6ff; }
+    .terminal-line.rx { color: #4edea3; }
+    .terminal-line.err { color: #ffb4ab; }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center pb-32">
+
+  <!-- TopAppBar -->
+  <header class="fixed top-0 w-full z-50 bg-glass-surface backdrop-blur-md border-b border-glass-border">
+    <div class="flex justify-between items-center px-margin-mobile h-16 max-w-container-max mx-auto">
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary font-bold">settings_remote</span>
+        <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">준석의 스마트홈</h1>
+      </div>
+      <button class="p-2 rounded-full hover:opacity-85 transition-opacity active:scale-95 duration-100 flex items-center gap-2" id="bt-status" onclick="connectBLE()">
+        <span class="material-symbols-outlined text-on-surface-variant" id="bt-icon">bluetooth_searching</span>
+        <span class="hidden md:block font-label-caps text-label-caps text-on-surface-variant" id="bt-label">DISCONNECTED</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="w-full max-w-container-max px-margin-mobile pt-24 flex-grow overflow-y-auto">
+
+    <!-- 1. 대시보드 탭 섹션 -->
+    <section id="dashboard-section" class="tab-section active">
+      <!-- Environmental Sensors -->
+      <div class="mb-8">
+        <div class="flex justify-between items-end mb-4">
+          <h2 class="font-label-caps text-label-caps text-on-surface-variant opacity-60">ENVIRONMENTAL SENSORS</h2>
+          <button class="text-primary hover:opacity-75 flex items-center gap-1 active:scale-90 transition-transform" onclick="syncAllSensors()">
+            <span class="material-symbols-outlined text-[18px]">refresh</span>
+            <span class="font-label-caps text-label-caps">SYNC ALL</span>
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-gutter">
+          <!-- Temperature Card -->
+          <div class="glass-card p-card-padding rounded-xl relative overflow-hidden">
+            <div class="flex justify-between items-start mb-4">
+              <span class="material-symbols-outlined text-primary">device_thermostat</span>
+              <button class="text-on-surface-variant hover:text-primary transition-colors" onclick="sendCommand('1')">
+                <span class="material-symbols-outlined text-[16px]">refresh</span>
+              </button>
+            </div>
+            <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">TEMP</p>
+            <div class="flex items-baseline gap-1">
+              <span class="font-data-display text-data-display text-primary" id="temp-value">--</span>
+              <span class="font-headline-md text-headline-md text-on-surface-variant">°C</span>
+            </div>
+            <div class="mt-4 w-full h-1 bg-surface-variant rounded-full overflow-hidden">
+              <div class="h-full bg-primary transition-all duration-500 w-0" id="temp-progress"></div>
+            </div>
+          </div>
+
+          <!-- Humidity Card -->
+          <div class="glass-card p-card-padding rounded-xl">
+            <div class="flex justify-between items-start mb-4">
+              <span class="material-symbols-outlined text-tertiary">humidity_percentage</span>
+              <button class="text-on-surface-variant hover:text-tertiary transition-colors" onclick="sendCommand('1')">
+                <span class="material-symbols-outlined text-[16px]">refresh</span>
+              </button>
+            </div>
+            <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">HUMIDITY</p>
+            <div class="flex items-baseline gap-1">
+              <span class="font-data-display text-data-display text-tertiary" id="humi-value">--</span>
+              <span class="font-headline-md text-headline-md text-on-surface-variant">%</span>
+            </div>
+            <div class="mt-4 w-full h-1 bg-surface-variant rounded-full overflow-hidden">
+              <div class="h-full bg-tertiary transition-all duration-500 w-0" id="humi-progress"></div>
+            </div>
+          </div>
+
+          <!-- Light Level Card -->
+          <div class="glass-card p-card-padding rounded-xl col-span-2">
+            <div class="flex justify-between items-start mb-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-status-warning">light_mode</span>
+                <p class="font-label-caps text-label-caps text-on-surface-variant">LUX INTENSITY (ADC)</p>
+              </div>
+              <button class="text-on-surface-variant hover:text-status-warning transition-colors" onclick="sendCommand('2')">
+                <span class="material-symbols-outlined text-[16px]">refresh</span>
+              </button>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-data-display text-data-display text-status-warning" id="cds-value">--</span>
+              <div class="flex-grow mx-4 h-2 bg-surface-variant rounded-full overflow-hidden">
+                <div class="h-full bg-status-warning transition-all duration-500 w-0" id="cds-progress" style="box-shadow: 0 0 10px rgba(245, 158, 11, 0.4)"></div>
+              </div>
+            </div>
+            <p class="text-[12px] text-on-surface-variant/70 mt-2 font-body-sm" id="cds-status">대기 중...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="mb-8">
+        <h2 class="font-label-caps text-label-caps text-on-surface-variant opacity-60 mb-4 tracking-wider">QUICK ACTUATORS</h2>
+        <div class="grid grid-cols-1 gap-gutter">
+          <!-- Sound System Card -->
+          <div class="glass-card p-card-padding rounded-xl">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="material-symbols-outlined text-secondary">music_note</span>
+              <p class="font-label-caps text-label-caps text-on-surface-variant">SOUND SYSTEM</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <button class="group flex flex-col items-center gap-2 py-5 rounded-xl border border-glass-border hover:bg-secondary/10 transition-all active:scale-95" onclick="sendCommand('5')">
+                <span class="material-symbols-outlined text-secondary text-[28px] group-hover:scale-110 transition-transform">volume_up</span>
+                <span class="font-label-caps text-label-caps text-secondary">학교종 (5)</span>
+              </button>
+              <button class="group flex flex-col items-center gap-2 py-5 rounded-xl border border-glass-border hover:bg-secondary/10 transition-all active:scale-95" onclick="sendCommand('6')">
+                <span class="material-symbols-outlined text-secondary text-[28px] group-hover:scale-110 transition-transform">library_music</span>
+                <span class="font-label-caps text-label-caps text-secondary">작은별 (6)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- OLED Display Card -->
+          <div class="glass-card p-card-padding rounded-xl flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-tertiary-container/20 flex items-center justify-center border border-tertiary/20">
+                <span class="material-symbols-outlined text-tertiary">photo</span>
+              </div>
+              <div>
+                <p class="font-headline-md text-[16px] text-on-surface leading-tight">OLED Character Image</p>
+                <p class="font-body-sm text-[12px] text-on-surface-variant opacity-70">Draw img/4.pbm to SSD1306</p>
+              </div>
+            </div>
+            <button class="px-5 py-3 bg-tertiary-container text-on-tertiary-container rounded-lg font-label-caps text-label-caps hover:brightness-110 active:scale-95 transition-all flex items-center gap-1" onclick="sendCommand('9')">
+              <span class="material-symbols-outlined text-[16px]">send</span>
+              <span>PUSH (9)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 기기 제어 탭 섹션 -->
+    <section id="devices-section" class="tab-section">
+      <div class="mb-8">
+        <h2 class="font-headline-md text-headline-md text-on-surface mb-1">Hardware Ecosystem</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-6">Manage all connected IoT modules in real-time.</p>
+        
+        <div class="grid grid-cols-2 gap-gutter">
+          <!-- RGB LED - Bento Controller -->
+          <div class="col-span-2 glass-card rounded-xl p-card-padding flex flex-col justify-between min-h-[150px] relative overflow-hidden group">
+            <div class="absolute -right-8 -top-8 w-32 h-32 bg-primary/10 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+            <div class="flex justify-between items-start z-10">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30 transition-all" id="led-indicator-bg">
+                  <span class="material-symbols-outlined text-on-surface-variant transition-colors" id="led-indicator-icon" style="font-variation-settings: 'FILL' 0;">lightbulb</span>
+                </div>
+                <div>
+                  <h3 class="font-headline-md text-headline-md leading-tight">RGB Lighting</h3>
+                  <p class="font-label-caps text-label-caps text-on-surface-variant opacity-50" id="led-indicator-status">OFF</p>
+                </div>
+              </div>
+              <button class="material-symbols-outlined text-on-surface-variant/50 hover:text-primary transition-colors" onclick="syncAllSensors()">refresh</button>
+            </div>
+            
+            <div class="mt-6 flex items-center justify-between z-10">
+              <div class="flex gap-2">
+                <div class="w-6 h-6 rounded-full border-2 border-white bg-red-500 cursor-pointer" onclick="setLed(true)"></div>
+                <div class="w-6 h-6 rounded-full bg-blue-500 cursor-pointer" onclick="setLed(true)"></div>
+                <div class="w-6 h-6 rounded-full bg-green-500 cursor-pointer" onclick="setLed(true)"></div>
+              </div>
+              <div class="flex gap-1">
+                <button class="px-4 py-2 bg-primary-container text-on-primary-container rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform" id="btn-led-on" onclick="setLed(true)">ON</button>
+                <button class="px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform border border-glass-border" id="btn-led-off" onclick="setLed(false)">OFF</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- LCD Backlight Switch -->
+          <div class="col-span-2 glass-card rounded-xl p-card-padding flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary">screenshot_monitor</span>
+                <h4 class="font-label-caps text-label-caps uppercase">LCD Backlight (TV)</h4>
+              </div>
+              <span class="font-label-caps text-[10px] text-on-surface-variant px-2 py-0.5 bg-surface-container rounded border border-glass-border">16x2 I2C</span>
+            </div>
+            <div class="bg-surface-container-lowest/80 border border-glass-border p-4 rounded-lg font-data-display text-lg text-primary/80 tracking-widest text-center shadow-inner font-mono min-h-[58px]" id="lcd-preview-text">
+              TEMP & HUMIDITY...<br/>SYSTEM LIVE
+            </div>
+            <div class="mt-4 flex gap-2 justify-end">
+              <button class="px-4 py-2 border border-primary/30 text-primary bg-primary/10 rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform" id="btn-lcd-on" onclick="setLcd(true)">ENABLE (3)</button>
+              <button class="px-4 py-2 border border-glass-border text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform" id="btn-lcd-off" onclick="setLcd(false)">DISABLE (4)</button>
+            </div>
+          </div>
+
+          <!-- SG90 Servo - Ambient Monitor -->
+          <div class="glass-card rounded-xl p-card-padding flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+              <span class="material-symbols-outlined text-secondary">rotate_right</span>
+              <h4 class="font-label-caps text-label-caps text-on-surface-variant">SERVO MOTOR</h4>
+            </div>
+            <div class="text-center mt-2">
+              <div class="font-data-display text-2xl text-on-surface" id="servo-display-angle">90°</div>
+              <p class="text-[11px] text-on-surface-variant/60 font-body-sm mt-1">CdS 조도 자동 연동<br>(밝을 때 90° / 어두울 때 180°)</p>
+            </div>
+          </div>
+
+          <!-- Piezo Test Buzzer -->
+          <div class="glass-card rounded-xl p-card-padding flex flex-col justify-between">
+            <div class="flex justify-between items-center">
+              <span class="material-symbols-outlined text-error">campaign</span>
+              <h4 class="font-label-caps text-label-caps text-on-surface-variant">BUZZER</h4>
+            </div>
+            <div class="flex flex-col gap-2 mt-4">
+              <button class="w-full py-3 bg-error-container/20 border border-error/20 rounded-lg text-error font-label-caps text-label-caps hover:bg-error-container/40 active:scale-95 transition-all" onclick="sendCommand('5')">
+                학교종 연주
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 통신 로그 탭 섹션 -->
+    <section id="log-section" class="tab-section">
+      <div class="mt-2 mb-4 flex justify-between items-end">
+        <div>
+          <p class="font-label-caps text-label-caps text-primary uppercase">Developer Tools</p>
+          <h2 class="font-headline-md text-headline-md text-on-surface">BLE Serial Terminal</h2>
+        </div>
+        <button class="flex items-center gap-1 font-label-caps text-[10px] text-on-surface-variant border border-glass-border px-2 py-1 rounded hover:bg-surface-variant transition-colors" onclick="clearLogs()">
+          <span class="material-symbols-outlined text-[14px]">delete_sweep</span>
+          CLEAR
+        </button>
+      </div>
+
+      <!-- Terminal Panel -->
+      <div class="bg-surface-container-lowest/80 rounded-xl border border-glass-border shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col min-h-[350px]">
+        <!-- Terminal Header -->
+        <div class="flex items-center justify-between px-4 py-2 border-b border-glass-border bg-surface-container-low/50">
+          <div class="flex gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-error/50"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-status-warning/50"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-status-online/50"></div>
+          </div>
+          <div class="font-label-caps text-[10px] text-on-surface-variant flex gap-4">
+            <span>BAUD: 115200</span>
+            <span>MTU: 247</span>
+          </div>
+        </div>
+        <!-- Log Stream -->
+        <div class="flex-grow h-64 overflow-y-auto p-4 font-label-caps text-[12px] leading-relaxed terminal-scroll bg-black/30 font-mono" id="terminal">
+          <div class="terminal-line sys">시스템: 대기 중입니다. 기기를 연결해 주세요.</div>
+        </div>
+        <!-- Input Area -->
+        <div class="p-3 bg-surface-container-low/80 border-t border-glass-border">
+          <div class="flex gap-2 items-center">
+            <div class="relative flex-grow group">
+              <div class="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-label-caps text-[14px] font-mono">$</div>
+              <input autocomplete="off" class="w-full bg-surface-container-lowest border border-glass-border rounded-lg pl-8 pr-3 py-2.5 font-mono text-[13px] text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-on-surface-variant/30" id="cmd-input" placeholder="ASCII 1글자 입력 (예: 1)" maxlength="1" onkeypress="handleLogKeyPress(event)"/>
+            </div>
+            <button class="bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary p-2.5 rounded-lg active:scale-90 transition-transform flex items-center justify-center" onclick="sendCustomCommand()">
+              <span class="material-symbols-outlined text-[20px]">send</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Hint box -->
+      <div class="mt-4 flex items-center justify-center gap-2 py-3 px-4 bg-glass-surface rounded-xl border border-glass-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">info</span>
+        <p class="font-body-sm text-[12px] text-on-surface-variant">단일 ASCII 글자 명령어('1' ~ '9')만 송신할 수 있습니다.</p>
+      </div>
+    </section>
+
+    <!-- 4. 기기 정보/설정 탭 섹션 -->
+    <section id="info-section" class="tab-section">
+      <!-- User Profile -->
+      <div class="glass-card rounded-xl p-card-padding flex items-center gap-4 mb-6">
+        <div class="relative">
+          <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 bg-surface-variant flex items-center justify-center">
+            <span class="material-symbols-outlined text-primary text-3xl">person</span>
+          </div>
+          <div class="absolute bottom-0 right-0 w-4 h-4 bg-status-online rounded-full border-2 border-surface shadow-sm" id="profile-status-dot"></div>
+        </div>
+        <div class="flex-grow">
+          <h2 class="font-headline-md text-headline-md text-on-surface">준석</h2>
+          <p class="font-body-sm text-[13px] text-on-surface-variant">Lumina Smart Home Member</p>
+        </div>
+      </div>
+
+      <!-- Device Configuration Details -->
+      <div class="space-y-4">
+        <h3 class="font-label-caps text-label-caps text-primary px-1">DEVICE DETAILS</h3>
+        <div class="glass-card rounded-xl overflow-hidden divide-y divide-glass-border">
+          <div class="flex items-center justify-between p-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-on-surface-variant">settings_remote</span>
+              <span class="font-body-lg text-on-surface text-[15px]">프로젝트명</span>
+            </div>
+            <span class="font-body-sm text-on-surface-variant text-[14px]">준석의 스마트홈 대시보드</span>
+          </div>
+          <div class="flex items-center justify-between p-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-on-surface-variant">badge</span>
+              <span class="font-body-lg text-on-surface text-[15px]">제작자</span>
+            </div>
+            <span class="font-body-sm text-on-surface-variant text-[14px]">준석</span>
+          </div>
+          <div class="flex items-center justify-between p-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-on-surface-variant">bluetooth</span>
+              <span class="font-body-lg text-on-surface text-[15px]">Target BLE SSID</span>
+            </div>
+            <span class="font-label-caps text-tertiary">ESP_Js</span>
+          </div>
+          <div class="flex items-center justify-between p-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-on-surface-variant">image</span>
+              <span class="font-body-lg text-on-surface text-[15px]">OLED 캐릭터</span>
+            </div>
+            <span class="font-body-sm text-on-surface-variant text-[14px]">img/4.pbm (Snoopy)</span>
+          </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-xl text-[13px] line-height-relaxed text-on-surface-variant/80 space-y-2">
+          <strong class="text-on-surface text-[14px] block mb-2">💡 블루투스 무선 통신 팁</strong>
+          <p>- <strong>iOS 아이폰</strong>에서는 Safari 대신 App Store에서 무료 설치 가능한 <strong>Bluefy</strong> 웹 BLE 브라우저 앱을 실행하여 본 웹사이트 주소로 접속해 주세요.</p>
+          <p>- <strong>안드로이드 크롬</strong> 브라우저에서는 블루투스 스캔 권한 및 위치 정보가 켜져 있어야 합니다.</p>
+          <p>- <strong>로컬 테스트</strong> 시 웹 블루투스 보안 규정 상 <code>localhost</code> 주소 혹은 <code>https://</code> 프로토콜 환경에서만 스캔 팝업이 활성화됩니다.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Connection Overlay -->
+  <div class="fixed inset-0 z-[100] flex flex-col items-center justify-center p-8 transition-opacity duration-700 bg-background/85 backdrop-blur-[20px]" id="overlay">
+    <div class="relative z-10 text-center max-w-xs flex flex-col items-center">
+      <div class="w-24 h-24 rounded-full border-2 border-primary/30 flex items-center justify-center mb-8 animate-pulse-slow">
+        <span class="material-symbols-outlined text-primary text-[48px]" style="font-variation-settings: 'FILL' 1;">bluetooth_connected</span>
+      </div>
+      <h2 class="font-headline-lg text-headline-lg text-primary mb-2">ESP_Js Found</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-8 opacity-75">준석의 스마트홈 시스템에 무선 연결이 필요합니다. BLE 허브 기기를 활성화해 주십시오.</p>
+      <button class="w-full py-4 bg-primary text-on-primary font-headline-md rounded-full shadow-[0_0_30px_rgba(173,198,255,0.3)] hover:brightness-110 active:scale-95 transition-all" onclick="connectBLE()">
+        Connect to ESP_Js
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Bar (Glassmorphic) -->
+  <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[448px] rounded-xl z-50 bg-glass-surface backdrop-blur-xl border border-glass-border shadow-[0_0_30px_rgba(59,130,246,0.1)]">
+    <div class="flex justify-around items-center h-20 px-2">
+      <!-- Dashboard -->
+      <button class="flex flex-col items-center justify-center text-primary transition-colors active:scale-90 duration-200" id="tab-dashboard" onclick="switchTab('dashboard')">
+        <span class="material-symbols-outlined mb-1">dashboard</span>
+        <span class="font-label-caps text-label-caps">Dashboard</span>
+      </button>
+      <!-- Devices -->
+      <button class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:text-primary transition-colors active:scale-90 duration-200" id="tab-devices" onclick="switchTab('devices')">
+        <span class="material-symbols-outlined mb-1">router</span>
+        <span class="font-label-caps text-label-caps">Devices</span>
+      </button>
+      <!-- Terminal -->
+      <button class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:text-primary transition-colors active:scale-90 duration-200" id="tab-log" onclick="switchTab('log')">
+        <span class="material-symbols-outlined mb-1">terminal</span>
+        <span class="font-label-caps text-label-caps">Terminal</span>
+      </button>
+      <!-- Settings -->
+      <button class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:text-primary transition-colors active:scale-90 duration-200" id="tab-info" onclick="switchTab('info')">
+        <span class="material-symbols-outlined mb-1">settings</span>
+        <span class="font-label-caps text-label-caps">Settings</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- JavaScript 연동 코드 -->
+  <script>
+    // 전역 블루투스 상태 변수
+    let bluetoothDevice = null;
+    let rxCharacteristic = null;
+    let txCharacteristic = null;
+
+    // Nordic UART Service (NUS) UUID 정의
+    const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+    const RX_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // 웹 -> ESP32
+    const TX_CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // ESP32 -> 웹
+
+    // UI 탭 전환 함수
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      document.querySelectorAll('nav button').forEach(item => {
+        item.classList.remove('text-primary');
+        item.classList.add('text-on-surface-variant', 'opacity-60');
+      });
+
+      document.getElementById(`${tabId}-section`).classList.add('active');
+      
+      const activeTabButton = document.getElementById(`tab-${tabId}`);
+      if (activeTabButton) {
+        activeTabButton.classList.add('text-primary');
+        activeTabButton.classList.remove('text-on-surface-variant', 'opacity-60');
+      }
+    }
+
+    // 터미널 로깅 기능
+    function log(message, type = 'sys') {
+      const terminal = document.getElementById('terminal');
+      const line = document.createElement('div');
+      line.className = `terminal-line ${type} mb-1.5`;
+      
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      line.innerHTML = `<span class="text-on-surface-variant">[${time}]</span> <span class="ml-2 font-bold">${type.toUpperCase()}:</span> <span>${message}</span>`;
+      
+      terminal.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function clearLogs() {
+      const terminal = document.getElementById('terminal');
+      terminal.innerHTML = '<div class="terminal-line sys">시스템: 로그 초기화 완료.</div>';
+    }
+
+    // 연결 상태 배지/텍스트 갱신
+    function updateStatus(status, text) {
+      const btIcon = document.getElementById('bt-icon');
+      const btLabel = document.getElementById('bt-label');
+
+      if (status === 'connected') {
+        btIcon.className = 'material-symbols-outlined text-status-online';
+        btIcon.textContent = 'bluetooth_connected';
+        btLabel.className = 'hidden md:block font-label-caps text-label-caps text-status-online';
+        btLabel.textContent = text;
+        
+        // Profile status update
+        const profileStatus = document.getElementById('profile-status-dot');
+        if (profileStatus) {
+          profileStatus.className = 'absolute bottom-0 right-0 w-4 h-4 bg-status-online rounded-full border-2 border-surface shadow-sm';
+        }
+      } else if (status === 'connecting') {
+        btIcon.className = 'material-symbols-outlined text-status-warning animate-spin';
+        btIcon.textContent = 'autorenew';
+        btLabel.className = 'hidden md:block font-label-caps text-label-caps text-status-warning';
+        btLabel.textContent = text;
+      } else {
+        btIcon.className = 'material-symbols-outlined text-on-surface-variant';
+        btIcon.textContent = 'bluetooth_searching';
+        btLabel.className = 'hidden md:block font-label-caps text-label-caps text-on-surface-variant';
+        btLabel.textContent = text;
+
+        const profileStatus = document.getElementById('profile-status-dot');
+        if (profileStatus) {
+          profileStatus.className = 'absolute bottom-0 right-0 w-4 h-4 bg-status-error rounded-full border-2 border-surface shadow-sm';
+        }
+      }
+    }
+
+    // Web Bluetooth 연결 함수
+    async function connectBLE() {
+      updateStatus('connecting', 'SCANNING...');
+      log('블루투스 기기 검색 창을 띄웁니다.', 'sys');
+
+      try {
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          filters: [
+            { services: [NUS_SERVICE_UUID] },
+            { namePrefix: 'ESP_' }
+          ]
+        });
+
+        log(`장치를 찾았습니다: ${bluetoothDevice.name}`, 'sys');
+        bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+        log('GATT 서버에 연동 중...', 'sys');
+        const server = await bluetoothDevice.gatt.connect();
+
+        log('NUS 서비스 프로필 매칭 중...', 'sys');
+        const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+
+        log('통신 속성 채널 바인딩 중...', 'sys');
+        rxCharacteristic = await service.getCharacteristic(RX_CHARACTERISTIC_UUID);
+        txCharacteristic = await service.getCharacteristic(TX_CHARACTERISTIC_UUID);
+
+        // TX Notify 수신 시작
+        log('ESP32 원격 패킷 수신 대기...', 'sys');
+        await txCharacteristic.startNotifications();
+        txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+
+        log('스마트홈 연동 완료!', 'sys');
+        updateStatus('connected', `CONNECTED: ${bluetoothDevice.name}`);
+
+        // 오버레이 페이드아웃 및 숨김
+        const overlay = document.getElementById('overlay');
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          overlay.style.display = 'none';
+        }, 700);
+
+        // 연결 완료 후 온습도 및 조도 초기 데이터 동기화
+        setTimeout(() => sendCommand('1'), 500);  // 온습도 요청
+        setTimeout(() => sendCommand('2'), 1000); // 조도 요청
+
+      } catch (error) {
+        log(`연결 오류: ${error.message}`, 'err');
+        updateStatus('disconnected', 'DISCONNECTED');
+        alert(`연결 과정에 실패하였습니다:\n${error.message}`);
+      }
+    }
+
+    // 연결 끊김 발생 이벤트 핸들러
+    function onDisconnected() {
+      log('ESP32 블루투스 연결이 종료되었습니다.', 'sys');
+      updateStatus('disconnected', 'DISCONNECTED');
+
+      // 오버레이 다시 출력
+      const overlay = document.getElementById('overlay');
+      overlay.style.display = 'flex';
+      setTimeout(() => {
+        overlay.style.opacity = '1';
+      }, 50);
+
+      rxCharacteristic = null;
+      txCharacteristic = null;
+      bluetoothDevice = null;
+
+      // 센서 데이터 뷰 초기화
+      document.getElementById('temp-value').textContent = '--';
+      document.getElementById('humi-value').textContent = '--';
+      document.getElementById('cds-value').textContent = '--';
+      document.getElementById('temp-progress').style.width = '0%';
+      document.getElementById('humi-progress').style.width = '0%';
+      document.getElementById('cds-progress').style.width = '0%';
+      document.getElementById('cds-status').textContent = '대기 중...';
+      document.getElementById('servo-display-angle').textContent = '--';
+      
+      // Actuator UI 토글 리셋
+      resetLEDState();
+      resetLCDState();
+    }
+
+    // ESP32로 단방향 ASCII 문자 명령어 송출
+    async function sendCommand(char) {
+      if (!rxCharacteristic) {
+        log('명령 송출 실패: 블루투스가 연결되어 있지 않습니다.', 'err');
+        return;
+      }
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(char);
+        if (rxCharacteristic.writeValueWithoutResponse) {
+          await rxCharacteristic.writeValueWithoutResponse(data);
+        } else {
+          await rxCharacteristic.writeValue(data);
+        }
+        log(`'${char}'`, 'tx');
+      } catch (error) {
+        log(`송신 에러: ${error.message}`, 'err');
+      }
+    }
+
+    // RGB LED 제어 및 뷰 상태 갱신
+    function setLed(isOn) {
+      const bg = document.getElementById('led-indicator-bg');
+      const icon = document.getElementById('led-indicator-icon');
+      const statusText = document.getElementById('led-indicator-status');
+      
+      if (isOn) {
+        bg.className = 'w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/40 active-glow';
+        icon.className = 'material-symbols-outlined text-primary';
+        icon.style.fontVariationSettings = "'FILL' 1";
+        statusText.className = 'font-label-caps text-label-caps text-primary font-bold';
+        statusText.textContent = 'ONLINE (HIGH)';
+        
+        document.getElementById('btn-led-on').className = 'px-4 py-2 bg-primary text-on-primary rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform font-bold';
+        document.getElementById('btn-led-off').className = 'px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform border border-glass-border opacity-60';
+        sendCommand('7');
+      } else {
+        bg.className = 'w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center border border-glass-border';
+        icon.className = 'material-symbols-outlined text-on-surface-variant';
+        icon.style.fontVariationSettings = "'FILL' 0";
+        statusText.className = 'font-label-caps text-label-caps text-on-surface-variant opacity-50';
+        statusText.textContent = 'OFF';
+        
+        document.getElementById('btn-led-on').className = 'px-4 py-2 bg-primary-container text-on-primary-container rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
+        document.getElementById('btn-led-off').className = 'px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform border border-glass-border font-bold';
+        sendCommand('8');
+      }
+    }
+
+    function resetLEDState() {
+      const bg = document.getElementById('led-indicator-bg');
+      const icon = document.getElementById('led-indicator-icon');
+      const statusText = document.getElementById('led-indicator-status');
+      bg.className = 'w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center border border-glass-border';
+      icon.className = 'material-symbols-outlined text-on-surface-variant';
+      icon.style.fontVariationSettings = "'FILL' 0";
+      statusText.className = 'font-label-caps text-label-caps text-on-surface-variant opacity-50';
+      statusText.textContent = 'OFF';
+      
+      document.getElementById('btn-led-on').className = 'px-4 py-2 bg-primary-container text-on-primary-container rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
+      document.getElementById('btn-led-off').className = 'px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform border border-glass-border opacity-60';
+    }
+
+    // LCD 백라이트 제어 및 뷰 상태 갱신
+    function setLcd(isOn) {
+      const preview = document.getElementById('lcd-preview-text');
+      if (isOn) {
+        document.getElementById('btn-lcd-on').className = 'px-4 py-2 border border-primary/50 text-primary bg-primary/20 rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform font-bold';
+        document.getElementById('btn-lcd-off').className = 'px-4 py-2 border border-glass-border text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
+        preview.className = 'bg-surface-container-lowest/80 border border-glass-border p-4 rounded-lg font-data-display text-lg text-primary tracking-widest text-center shadow-[0_0_15px_rgba(173,198,255,0.15)] font-mono min-h-[58px]';
+        sendCommand('3');
+      } else {
+        document.getElementById('btn-lcd-on').className = 'px-4 py-2 border border-primary/30 text-primary bg-primary/10 rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
+        document.getElementById('btn-lcd-off').className = 'px-4 py-2 border border-glass-border text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform font-bold';
+        preview.className = 'bg-surface-container-lowest/40 border border-glass-border p-4 rounded-lg font-data-display text-lg text-on-surface-variant/40 tracking-widest text-center shadow-inner font-mono min-h-[58px]';
+        sendCommand('4');
+      }
+    }
+
+    function resetLCDState() {
+      const preview = document.getElementById('lcd-preview-text');
+      document.getElementById('btn-lcd-on').className = 'px-4 py-2 border border-primary/30 text-primary bg-primary/10 rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
+      document.getElementById('btn-lcd-off').className = 'px-4 py-2 border border-glass-border text-on-surface-variant rounded-lg font-label-caps text-label-caps active:scale-95 transition-transform opacity-60';
+      preview.className = 'bg-surface-container-lowest/40 border border-glass-border p-4 rounded-lg font-data-display text-lg text-on-surface-variant/40 tracking-widest text-center shadow-inner font-mono min-h-[58px]';
+    }
+
+    // 센서 데이터 1괄 요청 함수
+    function syncAllSensors() {
+      sendCommand('1'); // 온습도 요청
+      setTimeout(() => sendCommand('2'), 300); // 조도 요청
+    }
+
+    // 수신 버퍼링을 위한 전역 스트링 변수
+    let rxBuffer = "";
+
+    // ESP32로부터 넘어오는 패킷 리시브 핸들러
+    function handleNotifications(event) {
+      const value = event.target.value;
+      const decoder = new TextDecoder('utf-8');
+      const decodedString = decoder.decode(value);
+      
+      rxBuffer += decodedString;
+      
+      // 줄바꿈 개행문자(\n) 기준으로 버퍼 라인별 스플릿
+      while (rxBuffer.includes('\n')) {
+        const idx = rxBuffer.indexOf('\n');
+        const line = rxBuffer.slice(0, idx).trim();
+        rxBuffer = rxBuffer.slice(idx + 1);
+        
+        if (line) {
+          log(line, 'rx');
+          parseIncomingPacket(line);
+        }
+      }
+    }
+
+    // 센서 리포팅 패킷 해석 및 돔 트리 바인딩
+    function parseIncomingPacket(msg) {
+      // 1. 온도 패킷 ("temp : 24" / "temp : Error")
+      if (msg.includes('temp')) {
+        if (msg.includes('Error')) {
+          document.getElementById('temp-value').textContent = '에러';
+          document.getElementById('temp-progress').style.width = '0%';
+          return;
+        }
+        const match = msg.match(/temp\s*:\s*(\d+)/);
+        if (match) {
+          const val = parseInt(match[1], 10);
+          document.getElementById('temp-value').textContent = val;
+          // 온도는 0~50 범위 비율로 시각화
+          const percent = Math.min(100, Math.max(0, (val / 50) * 100));
+          document.getElementById('temp-progress').style.width = `${percent}%`;
+        }
+      }
+      
+      // 2. 습도 패킷 ("humi : 45" / "humi : Error")
+      else if (msg.includes('humi')) {
+        if (msg.includes('Error')) {
+          document.getElementById('humi-value').textContent = '에러';
+          document.getElementById('humi-progress').style.width = '0%';
+          return;
+        }
+        const match = msg.match(/humi\s*:\s*(\d+)/);
+        if (match) {
+          const val = parseInt(match[1], 10);
+          document.getElementById('humi-value').textContent = val;
+          // 습도는 0~100 범위 그대로
+          const percent = Math.min(100, Math.max(0, val));
+          document.getElementById('humi-progress').style.width = `${percent}%`;
+        }
+      }
+      
+      // 3. 조도 ADC 패킷 (예: "320" / "4095")
+      else if (/^\d+$/.test(msg)) {
+        const val = parseInt(msg, 10);
+        document.getElementById('cds-value').textContent = val;
+        
+        // 조도는 ADC 값이 낮을 수록 밝음. 역산 진행.
+        const percent = Math.min(100, Math.max(0, ((4095 - val) / 4095) * 100));
+        document.getElementById('cds-progress').style.width = `${percent}%`;
+
+        // 4000 초과 시 어두움
+        const isDark = val > 4000;
+        const statusDesc = isDark ? '어두움 (블라인드 닫힘 / 180° 회전)' : '밝음 (블라인드 열림 / 90° 회전)';
+        document.getElementById('cds-status').textContent = statusDesc;
+        
+        // Servo angle display sync
+        const angleDisplay = document.getElementById('servo-display-angle');
+        if (angleDisplay) {
+          angleDisplay.textContent = isDark ? '180°' : '90°';
+        }
+      }
+    }
+
+    // 터미널 인풋 수동 명령어 송출
+    function sendCustomCommand() {
+      const input = document.getElementById('cmd-input');
+      const val = input.value.trim();
+      
+      if (!val) return;
+      if (val.length > 1) {
+        alert('명령어는 단 1글자의 아스키 문자만 입력 전송 가능합니다.');
+        return;
+      }
+
+      sendCommand(val);
+      input.value = '';
+      input.focus();
+    }
+
+    // 터미널 인풋 엔터 키 훅
+    function handleLogKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendCustomCommand();
+      }
+    }
+  </script>
+</body>
+</html>
