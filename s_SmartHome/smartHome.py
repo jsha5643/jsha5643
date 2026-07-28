@@ -514,8 +514,8 @@ def connect_wifi():
         sleep(3.0)
         return False
 
-# 와이파이 연결 시도
-connect_wifi()
+# 와이파이 연결 시도 비활성화 (오직 블루투스 전용 모드로 렉 없이 가동)
+# connect_wifi()
 
 # BLE 모듈 초기화 및 인스턴스 생성
 import ble_library
@@ -766,9 +766,9 @@ while True:
     # 1초에 한 번만 (0.05초 * 20번 = 1초) 센서 측정, 화면 출력, 타이머 연산 등을 수행
     loop_count += 1
     
-    # 0.5초(10틱)마다 웹 대시보드의 원격 제어 명령 수신
-    if loop_count % 10 == 0:
-        poll_commands()
+    # 0.5초(10틱)마다 웹 대시보드의 원격 제어 명령 수신 비활성화 (블루투스 전용)
+    # if loop_count % 10 == 0:
+    #     poll_commands()
         
     if loop_count >= 20:
         loop_count = 0
@@ -860,7 +860,7 @@ while True:
         except Exception as e:
             print("LCD write error:", e)
 
-        # 1초 주기로 수집된 센서 데이터를 서버로 전송
-        flush_buffer()
+        # 1초 주기로 수집된 센서 데이터를 서버로 전송 비활성화 (블루투스 전용)
+        # flush_buffer()
 
     sleep(0.05)
