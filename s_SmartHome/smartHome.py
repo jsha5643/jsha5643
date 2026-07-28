@@ -710,8 +710,16 @@ display2.show()
 
 print("Smart Dog Suite System Live. Waiting for BLE connection...")
 
-# 터치 센서의 플로팅 노이즈 필터링 함수 (Active-Low 기준: 10ms 간격으로 3번 연속 LOW(0)인지 검증)
-def read_touch_stable(pin):
+# 정전식 터치 센서용 디바운스 필터 (Active-High 기준: 평소 0, 터치 시 1)
+def read_touch_active_high(pin):
+    for _ in range(3):
+        if pin.value() == 0:
+            return 0
+        sleep_ms(10)
+    return 1
+
+# 물리 풋 스위치용 디바운스 필터 (Active-Low PULL_UP 기준: 평소 1, 눌림 시 0)
+def read_touch_active_low(pin):
     for _ in range(3):
         if pin.value() == 1:
             return 0
@@ -726,14 +734,14 @@ loop_count = 0
 current_play_step = 1
 
 while True:
-    # 1. 정전식 터치 센서 감지 (D17, D5, D18, D19 개별 실시간 감지)
-    t1 = read_touch_stable(touch1)
-    t2 = read_touch_stable(touch2)
-    t3 = read_touch_stable(touch3)
-    t4 = read_touch_stable(touch4)
+    # 1. 정전식 터치 센서 감지 (Active-High)
+    t1 = read_touch_active_high(touch1)
+    t2 = read_touch_active_high(touch2)
+    t3 = read_touch_active_high(touch3)
+    t4 = read_touch_active_high(touch4)
 
-    # 2. 물리 스위치 감지 (D16 - 3핀 스위치)
-    sw = read_touch_stable(limit_switch)
+    # 2. 물리 스위치 감지 (Active-Low)
+    sw = read_touch_active_low(limit_switch)
 
     # 터치센서 개별 트리거 작동
     if t1 and not touch1_prev:
