@@ -861,7 +861,6 @@
             }
         }
 
-        // Wi-Fi 연결 핸들러
         async function connectWiFi() {
             log('와이파이 제어 서버에 연결하는 중...', 'system');
             try {
@@ -1017,8 +1016,8 @@
             sendCommand(syncStr);
         }
 
-        // 화상 통화 (WebRTC & WebCam) 및 실시간 펫캠 기능 구현
-        const signalingHost = "https://fluffy-mirrors-occur.loca.lt";
+        // 화상 통화 (WebRTC 대신 HTTP 릴레이) 및 실시간 펫캠 기능 구현
+        const signalingHost = "https://twenty-rockets-itch.loca.lt";
 
         // 펫캠 화면의 상태 메시지 및 연결 단계를 비디오 플레이스홀더에 직접 출력하는 헬퍼 함수
         function showStatusOrError(message, isError = false) {
@@ -1042,19 +1041,19 @@
             
         let myRole = "owner"; // 기본 역할은 주인 노트북
         let localStream = null;
-        let petCamStream = null;
-        let pc = null;
-        let remoteCandidatesQueue = [];
         let signalingInterval = null;
         let audioCtx = null;
         let ringInterval = null;
 
-        const rtcConfig = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
+        // HTTP 릴레이용 오디오 및 비디오 캡처 변수
+        let audioContext = null;
+        let scriptProcessor = null;
+        let audioDataBuffer = [];
+        let dogRelayInterval = null;
+        let ownerFramePollInterval = null;
+        let nextStartTime = 0;
+        const relayCanvas = document.createElement('canvas');
+        const relayCtx = relayCanvas.getContext('2d');
 
         // 강아지 모드로 설정 시 사용자의 터치 제스처 범위 내에서 미리 카메라 권한 및 스트림 획득!
         async function startDogCameraPreemptive() {
@@ -1067,9 +1066,9 @@
                 
                 localStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: "user" },
-                    audio: false
+                    audio: true // 마이크 획득 추가
                 });
-                log("카메라 획득 성공!", "system");
+                log("카메라 및 마이크 획득 성공!", "system");
                 
                 const miniPreview = document.getElementById('dog-mini-preview');
                 if (miniPreview) {
@@ -1080,6 +1079,184 @@
                 console.error("Preemptive camera startup failed:", err);
                 log("카메라 획득 실패: " + err.message, "danger");
             }
+        }
+
+        // 강아지 폰 모드: 캡처 및 전송 루프 개시
+        function startDogRelayLoop() {
+            const video = document.getElementById('dog-mini-preview');
+            if (dogRelayInterval) clearInterval(dogRelayInterval);
+            
+            // Audio capture 시작
+            try {
+                if (localStream) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(localStream);
+                    scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+                    source.connect(scriptProcessor);
+                    scriptProcessor.connect(audioContext.destination);
+
+                    scriptProcessor.onaudioprocess = (event) => {
+                        const inputData = event.inputBuffer.getChannelData(0);
+                        const temp = [];
+                        // 44.1kHz -> 11kHz 다운샘플링하여 전송 데이터 대폭 축소
+                        for (let i = 0; i < inputData.length; i += 4) {
+                            temp.push(Math.round(inputData[i] * 100) / 100);
+                        }
+                        audioDataBuffer.push(...temp);
+                    };
+                    log("오디오 스트림 캡처 가동", "system");
+                }
+            } catch (e) {
+                console.error("Audio capture startup failed:", e);
+            }
+
+            dogRelayInterval = setInterval(async () => {
+                const videoEl = video || document.getElementById('dog-mini-preview');
+                if (!localStream || !videoEl || videoEl.readyState < 2) return;
+                
+                try {
+                    relayCanvas.width = 320;
+                    relayCanvas.height = 240;
+                    relayCtx.save();
+                    relayCtx.scale(-1, 1);
+                    relayCtx.drawImage(videoEl, -320, 0, 320, 240);
+                    relayCtx.restore();
+                    
+                    const frameData = relayCanvas.toDataURL('image/jpeg', 0.5); // JPEG 압축률 0.5 설정
+                    const audioPayload = [...audioDataBuffer];
+                    audioDataBuffer = []; // 버퍼 플러시
+
+                    await fetch(`${signalingHost}/api/post_frame`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Bypass-Tunnel-Reminder': 'true' 
+                        },
+                        body: JSON.stringify({
+                            frame: frameData,
+                            audio: audioPayload
+                        })
+                    });
+                } catch (e) {
+                    // 전송 실패 오류는 무시하고 지속 구동
+                }
+            }, 150); // 약 6.6 fps
+            log("비디오 프레임 릴레이 가동", "system");
+        }
+
+        function stopDogRelayLoop() {
+            if (dogRelayInterval) {
+                clearInterval(dogRelayInterval);
+                dogRelayInterval = null;
+            }
+            if (scriptProcessor) {
+                scriptProcessor.disconnect();
+                scriptProcessor = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            audioDataBuffer = [];
+            log("강아지 릴레이 루프 중지 완료", "system");
+        }
+
+        // 주인 모드: 데이터 폴링 및 재생 루프 개시
+        function startOwnerPollLoop() {
+            if (ownerFramePollInterval) clearInterval(ownerFramePollInterval);
+            
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            const preview = document.getElementById('pet-cam-preview');
+            const placeholder = document.getElementById('pet-cam-placeholder');
+            
+            if (placeholder) placeholder.style.display = 'none';
+            if (preview) preview.style.display = 'none';
+            
+            let relayImg = document.getElementById('pet-cam-relay-img');
+            if (!relayImg) {
+                relayImg = document.createElement('img');
+                relayImg.id = 'pet-cam-relay-img';
+                relayImg.style.width = '100%';
+                relayImg.style.height = '100%';
+                relayImg.style.objectFit = 'cover';
+                const container = document.getElementById('pet-cam-preview-container');
+                if (container) container.appendChild(relayImg);
+            }
+            relayImg.style.display = 'block';
+
+            let modalRelayImg = document.getElementById('pet-call-relay-img');
+            if (!modalRelayImg) {
+                modalRelayImg = document.createElement('img');
+                modalRelayImg.id = 'pet-call-relay-img';
+                modalRelayImg.style.width = '100%';
+                modalRelayImg.style.height = '100%';
+                modalRelayImg.style.objectFit = 'cover';
+                const modalContainer = document.getElementById('video-call-container');
+                if (modalContainer) modalContainer.appendChild(modalRelayImg);
+            }
+            modalRelayImg.style.display = 'block';
+            document.getElementById('pet-cam-video').style.display = 'none';
+
+            ownerFramePollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${signalingHost}/api/get_frame?t=${Date.now()}`, {
+                        headers: { 'Bypass-Tunnel-Reminder': 'true' }
+                    });
+                    const data = await res.json();
+                    
+                    if (data.frame && data.frame.length > 100) {
+                        relayImg.src = data.frame;
+                        modalRelayImg.src = data.frame;
+                    }
+                    
+                    if (data.audio && data.audio.length > 0) {
+                        playReceivedAudio(data.audio);
+                    }
+                } catch (e) {
+                    // 폴링 에러 무시
+                }
+            }, 150);
+            log("주인용 미디어 수신 및 재생 루프 가동", "system");
+        }
+
+        function playReceivedAudio(pcmData) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // 44100 / 4 = 11025Hz 다운샘플링 주파수
+            const sampleRate = 11025;
+            const buffer = audioCtx.createBuffer(1, pcmData.length, sampleRate);
+            const channelData = buffer.getChannelData(0);
+            for (let i = 0; i < pcmData.length; i++) {
+                channelData[i] = pcmData[i];
+            }
+            
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioCtx.destination);
+            
+            const currentTime = audioCtx.currentTime;
+            if (nextStartTime < currentTime) {
+                nextStartTime = currentTime + 0.05; // 50ms 오디오 버퍼링 지연 마진
+            }
+            source.start(nextStartTime);
+            nextStartTime += buffer.duration;
+        }
+
+        function stopOwnerPollLoop() {
+            if (ownerFramePollInterval) {
+                clearInterval(ownerFramePollInterval);
+                ownerFramePollInterval = null;
+            }
+            const relayImg = document.getElementById('pet-cam-relay-img');
+            if (relayImg) relayImg.style.display = 'none';
+            const modalRelayImg = document.getElementById('pet-call-relay-img');
+            if (modalRelayImg) modalRelayImg.style.display = 'none';
+            
+            const placeholder = document.getElementById('pet-cam-placeholder');
+            if (placeholder) placeholder.style.display = 'flex';
+            log("주인용 수신 루프 중지 완료", "system");
         }
 
         // 기기 역할 강제 지정 함수
@@ -1099,11 +1276,11 @@
                 tabBar.style.display = 'flex';
                 if (dogWaitingScreen) dogWaitingScreen.style.display = 'none';
                 
-                stopAutoPetCamLoop(); // 안전을 위해 기존 루프 정지
-                resetWebRTC(false);   // 노트북 주인 모드는 전체 리셋 진행
+                stopOwnerPollLoop();
+                stopDogRelayLoop();
+                resetMediaState(false);
                 stopSignalingPolling();
                 startSignalingPolling();
-                startAutoPetCamLoop();
             } else {
                 document.getElementById('btn-role-dog').classList.add('active');
                 log("강아지용 스마트폰 모드로 설정되었습니다. (폰 고정용)", "system");
@@ -1112,16 +1289,17 @@
                 tabBar.style.display = 'none';
                 if (dogWaitingScreen) dogWaitingScreen.style.display = 'flex';
                 
-                stopAutoPetCamLoop();
-                resetWebRTC(true);    // 강아지 모드는 로컬 리셋만 수행하여 주인의 Offer를 보호!
+                stopOwnerPollLoop();
+                stopDogRelayLoop();
+                resetMediaState(true);
                 
-                // 대기 화면에 카메라 켜기 버튼 노출
                 const startBtn = document.getElementById('btn-start-dog-cam');
                 if (startBtn) {
                     startBtn.style.display = 'inline-block';
                 }
                 
                 stopSignalingPolling();
+                startSignalingPolling(); // 강아지도 주인의 호출 시그널 폴링
             }
         }
 
@@ -1130,7 +1308,6 @@
             if (signalingInterval) clearInterval(signalingInterval);
             signalingInterval = setInterval(async () => {
                 try {
-                    // 캐시 방지를 위해 고유 타임스탬프 파라미터를 추가하여 강제 조회
                     const res = await fetch(`${signalingHost}/api/get_signal?role=${myRole}&t=${Date.now()}`, {
                         headers: { 'Bypass-Tunnel-Reminder': 'true' }
                     });
@@ -1138,9 +1315,6 @@
                     
                     if (data.sdp) {
                         handleRemoteSDP(data.sdp);
-                    }
-                    if (data.candidates && data.candidates.length > 0) {
-                        handleRemoteCandidates(data.candidates);
                     }
                 } catch (e) {
                     // 폴링 실패 무시
@@ -1155,255 +1329,75 @@
             }
         }
 
-        // PeerConnection 객체 생성 및 이벤트 연결
-        function createPeerConnection() {
-            if (pc) return pc;
-            
-            pc = new RTCPeerConnection(rtcConfig);
-            log("RTCPeerConnection 생성 완료", "system");
-            
-            // 상대방 카메라 비디오 피드가 수신되었을 때 처리
-            pc.ontrack = (event) => {
-                log("상대방 비디오 스트림 수신 완료!", "system");
-                const remoteStream = event.streams[0];
-                
-                if (myRole === "owner") {
-                    // 주인은 펫캠 프리뷰 영역과 화상통화 비디오 영역에 강아지 카메라 출력
-                    document.getElementById('pet-cam-preview').srcObject = remoteStream;
-                    document.getElementById('pet-cam-placeholder').style.display = "none";
-                    document.getElementById('pet-cam-video').srcObject = remoteStream;
-                } else {
-                    // 강아지는 화상통화 화면 액정에 주인의 노트북 웹캠 출력
-                    document.getElementById('pet-cam-video').srcObject = remoteStream;
-                }
-            };
-            
-            pc.oniceconnectionstatechange = () => {
-                log(`ICE Connection State: ${pc.iceConnectionState}`, "system");
-                if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-                    log("WebRTC 연결에 성공했습니다!", "success");
-                    const placeholder = document.getElementById('pet-cam-placeholder');
-                    if (placeholder) placeholder.style.display = "none";
-                } else if (pc.iceConnectionState === 'checking') {
-                    showStatusOrError("네트워크 경로 탐색 중 (Checking)...");
-                } else if (pc.iceConnectionState === 'failed') {
-                    showStatusOrError("연결 실패 (Failed) - 재시도 예정", true);
-                } else if (pc.iceConnectionState === 'disconnected') {
-                    showStatusOrError("연결 끊김 (Disconnected) - 재시도 예정", true);
-                }
-            };
-            
-            pc.onicecandidate = async (event) => {
-                if (event.candidate) {
-                    // 생성된 ICE 후보를 서버로 전송
-                    await fetch(`${signalingHost}/api/send_candidate`, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Bypass-Tunnel-Reminder': 'true'
-                        },
-                        body: JSON.stringify({ role: myRole, candidate: event.candidate })
-                    });
-                }
-            };
-            
-            return pc;
-        }
-
-        // 상대방이 보낸 SDP 정보(Offer 또는 Answer) 처리
+        // 상대방이 보낸 신호 데이터 처리
         async function handleRemoteSDP(sdp) {
-            const isOffer = sdp.type === "offer" || (sdp.sdp && sdp.type === "offer");
-            if (isOffer && pc) {
-                log("새로운 연결 요청(Offer) 수신 - 기존 PeerConnection 초기화", "system");
-                pc.close();
-                pc = null;
-            }
-            
-            const peer = createPeerConnection();
-            if (peer.signalingState === "stable") return;
-            
-            // sdp.sdp와 sdp.type을 이용하여 RTCSessionDescription 생성
-            try {
-                let sdpObj;
-                if (sdp && sdp.sdp) {
-                    sdpObj = new RTCSessionDescription({ type: sdp.type, sdp: sdp.sdp });
-                } else if (sdp) {
-                    sdpObj = new RTCSessionDescription(sdp);
-                } else {
-                    throw new Error("sdp payload is empty");
-                }
-                await peer.setRemoteDescription(sdpObj);
-            } catch (e) {
-                console.error("setRemoteDescription failed:", e);
-                log("SDP 설정 오류: " + e.message, "danger");
-                return;
-            }
-            
-            // remote description이 설정되었으므로 대기 중이던 후보들을 모두 추가합니다
-            if (remoteCandidatesQueue.length > 0) {
-                log(`대기 중인 ICE 후보 ${remoteCandidatesQueue.length}개 추가 시작`, "system");
-                for (const cand of remoteCandidatesQueue) {
-                    try {
-                        await peer.addIceCandidate(new RTCIceCandidate(cand));
-                    } catch (e) {
-                        console.error("Error adding queued ice candidate:", e);
-                    }
-                }
-                remoteCandidatesQueue = [];
-            }
-            
-            if (sdp.type === "offer" || (sdp.sdp && sdp.type === "offer")) {
+            if (sdp.type === "call_active") {
                 if (myRole === "dog") {
-                    try {
-                        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                            console.error("iOS/HTTP: mediaDevices or getUserMedia is undefined.");
-                            return;
-                        }
-                        if (!localStream) {
-                            localStream = await navigator.mediaDevices.getUserMedia({
-                                video: { facingMode: "user" }, 
-                                audio: false
-                            });
-                        }
-                        // 기존 peer connection에 트랙이 추가되었는지 확인 후 없으면 추가
-                        const senders = peer.getSenders();
-                        const hasVideoSender = senders.some(s => s.track && s.track.kind === 'video');
-                        if (!hasVideoSender && localStream) {
-                            localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
-                            log("비디오 트랙 추가 완료", "system");
-                        }
-                        
-                        const answer = await peer.createAnswer();
-                        await peer.setLocalDescription(answer);
-                        
-                        await fetch(`${signalingHost}/api/send_sdp`, {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'Bypass-Tunnel-Reminder': 'true'
-                            },
-                            body: JSON.stringify({ role: myRole, sdp: answer })
-                        });
-                        
-                        if (sdp.isCall) {
-                            // 화상 통화일 경우: 강아지 화면에 통화 모달 팝업 가동 및 비디오 박스 출력
-                            document.getElementById('pet-call-modal').style.display = 'flex';
-                            document.getElementById('caller-profile-area').style.display = 'none';
-                            document.getElementById('video-call-container').style.display = 'block';
-                            document.getElementById('call-status-label').textContent = "주인과 연결되었습니다!";
-                            document.getElementById('btn-call-accept').style.display = 'none'; // 강아지 화면에선 수락버튼 필요없음
-                        } else {
-                            // 펫캠일 경우: 모달을 띄우지 않고, 대기화면의 텍스트만 업데이트
-                            const dogMsg = document.getElementById('dog-waiting-screen');
-                            if (dogMsg) {
-                                const pTag = dogMsg.querySelector('p');
-                                if (pTag) {
-                                    pTag.innerHTML = "<span style='color:#10b981; font-weight:700;'>주인이 실시간 모니터링 중입니다...</span><br>카메라가 가동되고 있습니다.";
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.error("Dog auto camera start failed:", err);
-                    }
+                    log("주인으로부터 화상 통화 연결 신호(call_active) 수신!", "system");
+                    // 강아지 폰 모드일 때: 모달 팝업 띄우고 즉시 비디오/오디오 송출 가동
+                    document.getElementById('pet-call-modal').style.display = 'flex';
+                    document.getElementById('caller-profile-area').style.display = 'none';
+                    document.getElementById('video-call-container').style.display = 'block';
+                    document.getElementById('call-status-label').textContent = "주인과 연결되었습니다!";
+                    document.getElementById('btn-call-accept').style.display = 'none';
+                    
+                    startDogRelayLoop();
                 }
-            }
-        }
-
-        async function handleRemoteCandidates(candidates) {
-            const peer = createPeerConnection();
-            if (!peer.remoteDescription) {
-                // remoteDescription이 아직 설정되지 않았다면 큐에 보관합니다
-                remoteCandidatesQueue.push(...candidates);
-                return;
-            }
-            for (const cand of candidates) {
-                try {
-                    await peer.addIceCandidate(new RTCIceCandidate(cand));
-                } catch (e) {
-                    console.error("Error adding ice candidate:", e);
+            } else if (sdp.type === "petcam_active") {
+                if (myRole === "dog") {
+                    log("주인으로부터 실시간 펫캠 모니터 활성화 신호(petcam_active) 수신!", "system");
+                    const dogMsg = document.getElementById('dog-waiting-screen');
+                    if (dogMsg) {
+                        const pTag = dogMsg.querySelector('p');
+                        if (pTag) {
+                            pTag.innerHTML = "<span style='color:#10b981; font-weight:700;'>주인이 실시간 모니터링 중입니다...</span><br>카메라가 가동되고 있습니다.";
+                        }
+                    }
+                    startDogRelayLoop();
                 }
             }
         }
 
         // 펫캠 버튼 작동 (주인이 원격으로 강아지 펫캠 활성화 요청)
-        let autoPetCamInterval = null;
-
-        function startAutoPetCamLoop() {
-            if (autoPetCamInterval) clearInterval(autoPetCamInterval);
-            
-            autoTriggerPetCam();
-            
-            autoPetCamInterval = setInterval(() => {
-                if (myRole === 'owner') {
-                    // pc가 없거나, 연결 상태가 좋지 않으면 (failed, disconnected) 재시도
-                    const needsReconnect = !pc || 
-                                           pc.iceConnectionState === 'failed' || 
-                                           pc.iceConnectionState === 'disconnected';
-                    if (needsReconnect) {
-                        log("원격 펫캠 재연결 시도...", "system");
-                        resetWebRTC();
-                        autoTriggerPetCam();
-                    }
-                }
-            }, 5000);
-        }
-
-        function stopAutoPetCamLoop() {
-            if (autoPetCamInterval) {
-                clearInterval(autoPetCamInterval);
-                autoPetCamInterval = null;
-            }
-        }
-
-        async function autoTriggerPetCam() {
-            if (pc) return;
-            
-            const btn = document.getElementById('btn-toggle-petcam');
-            const preview = document.getElementById('pet-cam-preview');
-            
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>원격 자동 연결 중...</span>';
-            showStatusOrError("강아지 카메라 연결 요청 중...");
-            
-            try {
-                const peer = createPeerConnection();
-                
-                // 주인의 웹캠 스트림은 보내지 않고, 비디오 데이터 수신을 위해 수신 대기 설정
-                const offer = await peer.createOffer({ offerToReceiveVideo: true });
-                await peer.setLocalDescription(offer);
-                
-                // isCall: false 를 SDP와 함께 포장하여 송신
-                await fetch(`${signalingHost}/api/send_sdp`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Bypass-Tunnel-Reminder': 'true'
-                    },
-                    body: JSON.stringify({ 
-                        role: myRole, 
-                        sdp: { type: offer.type, sdp: offer.sdp, isCall: false } 
-                    })
-                });
-                
-                log("강아지 카메라로 펫캠 영상 송출을 요청했습니다. (단방향 모니터링)", "system");
-                btn.className = "btn btn-danger";
-                btn.innerHTML = '<i class="fa-solid fa-video-slash"></i> <span>실시간 펫캠 끄기</span>';
-            } catch (err) {
-                console.error("Auto Petcam connection error:", err);
-                resetWebRTC();
-            }
-        }
+        let isPetCamActive = false;
 
         async function togglePetCam() {
-            if (pc) {
-                stopAutoPetCamLoop();
-                resetWebRTC();
+            const btn = document.getElementById('btn-toggle-petcam');
+            if (isPetCamActive) {
+                isPetCamActive = false;
+                stopOwnerPollLoop();
+                resetMediaState(false);
                 
-                const btn = document.getElementById('btn-toggle-petcam');
                 btn.className = "btn btn-primary";
                 btn.innerHTML = '<i class="fa-solid fa-video"></i> <span>실시간 펫캠 켜기</span>';
-                document.getElementById('pet-cam-placeholder').style.display = "flex";
             } else {
-                startAutoPetCamLoop();
+                isPetCamActive = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>원격 자동 연결 중...</span>';
+                showStatusOrError("강아지 카메라 연결 요청 중...");
+                
+                try {
+                    // 강아지 모바일 폰에 펫캠 기동 신호 전송
+                    await fetch(`${signalingHost}/api/send_sdp`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Bypass-Tunnel-Reminder': 'true'
+                        },
+                        body: JSON.stringify({ 
+                            role: myRole, 
+                            sdp: { type: "petcam_active" } 
+                        })
+                    });
+                    
+                    log("강아지 카메라로 펫캠 영상 송출을 요청했습니다.", "system");
+                    startOwnerPollLoop();
+                    
+                    btn.className = "btn btn-danger";
+                    btn.innerHTML = '<i class="fa-solid fa-video-slash"></i> <span>실시간 펫캠 끄기</span>';
+                } catch (err) {
+                    console.error("Auto Petcam connection error:", err);
+                    resetMediaState(false);
+                }
             }
         }
 
@@ -1461,27 +1455,7 @@
             statusLabel.textContent = "연결 중...";
             
             try {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    statusLabel.textContent = "화상캠 API 미지원 (HTTP 보안 차단)";
-                    sendCommand("call_accept");
-                    return;
-                }
-                const peer = createPeerConnection();
-                
-                // 노트북 전면 웹캠(주인 얼굴) 활성화
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "user" },
-                    audio: false
-                });
-                
-                // 내 카메라 트랙을 PeerConnection에 추가하여 상대방(강아지 화면)으로 송출
-                localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
-                
-                // 연결 수립을 위한 재협상 제안(Offer) 생성 및 발송
-                const offer = await peer.createOffer();
-                await peer.setLocalDescription(offer);
-                
-                // isCall: true 를 SDP와 함께 포장하여 송신
+                // 주인이 전화를 수락하면 강아지 폰에 call_active 신호 전송하여 강아지 폰이 송출을 시작하게 함
                 await fetch(`${signalingHost}/api/send_sdp`, {
                     method: 'POST',
                     headers: { 
@@ -1490,9 +1464,12 @@
                     },
                     body: JSON.stringify({ 
                         role: myRole, 
-                        sdp: { type: offer.type, sdp: offer.sdp, isCall: true } 
+                        sdp: { type: "call_active" } 
                     })
                 });
+                
+                // 주인용 미디어(비디오/오디오) 수신 릴레이 구동
+                startOwnerPollLoop();
                 
                 document.getElementById('caller-profile-area').style.display = "none";
                 videoContainer.style.display = "block";
@@ -1502,41 +1479,25 @@
                 // 보드로 통화 수락 신호 송신
                 sendCommand("call_accept");
             } catch (err) {
-                console.error("Camera access error:", err);
-                statusLabel.textContent = "웹캠 활성화 실패 (권한 에러)";
+                console.error("Accept call error:", err);
+                statusLabel.textContent = "연결 통신 에러 발생";
                 sendCommand("call_accept");
             }
         }
 
         function endCall() {
             stopRingSound();
-            resetWebRTC();
+            resetMediaState(false);
             document.getElementById('pet-call-modal').style.display = 'none';
             sendCommand("call_end");
         }
 
-        // WebRTC 데이터 리셋 함수
-        async function resetWebRTC(localOnly = false) {
+        // 미디어 상태 및 릴레이 초기화
+        async function resetMediaState(localOnly = false) {
             stopRingSound();
-            remoteCandidatesQueue = [];
+            stopDogRelayLoop();
+            stopOwnerPollLoop();
             
-            // 주인이면 내 카메라(노트북 웹캠)를 완전히 끕니다.
-            // 강아지면 대기 화면에서 카메라를 계속 유지해야 하므로 끄지 않습니다!
-            if (myRole === 'owner' && localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            if (petCamStream) {
-                petCamStream.getTracks().forEach(track => track.stop());
-                petCamStream = null;
-            }
-            if (pc) {
-                pc.close();
-                pc = null;
-            }
-            
-            document.getElementById('pet-cam-preview').srcObject = null;
-            document.getElementById('pet-cam-video').srcObject = null;
             document.getElementById('caller-profile-area').style.display = "flex";
             
             // 상태 표시 복구

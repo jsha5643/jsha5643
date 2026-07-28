@@ -13,6 +13,8 @@ signals = {
 # Wi-Fi 통신용 공유 데이터 저장소
 latest_sensors_data = ""
 esp_commands = []
+latest_frame = ""
+audio_queue = []
 
 class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -33,7 +35,7 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             print("[Server Log]", log_str)
 
     def do_GET(self):
-        global signals, latest_sensors_data, esp_commands
+        global signals, latest_sensors_data, esp_commands, latest_frame, audio_queue
         if self.path.startswith("/api/esp/commands"):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -54,45 +56,62 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(response_data)
             return
         elif self.path.startswith("/api/get_signal"):
-            # 역할에 따른 상대방의 시그널 데이터 및 Candidate 가져오기
-            role = self.path.split("role=")[-1]
+            # Query parameter 파싱 보완
+            query = self.path.split("?")[-1]
+            params = {}
+            for part in query.split("&"):
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                    params[k] = v
+            role = params.get("role", "")
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             
             response = {}
             if role == "owner":
-                # 주인이 가져갈 데이터 (dog가 보낸 sdp와 candidates)
                 response = {
                     "sdp": signals["dog"],
                     "candidates": list(signals["candidates_to_owner"])
                 }
                 signals["candidates_to_owner"].clear()
-                signals["dog"] = None  # 가져갔으므로 일회성으로 삭제
+                signals["dog"] = None
             elif role == "dog":
-                # 강아지가 가져갈 데이터 (owner가 보낸 sdp와 candidates)
                 response = {
                     "sdp": signals["owner"],
                     "candidates": list(signals["candidates_to_dog"])
                 }
                 signals["candidates_to_dog"].clear()
-                signals["owner"] = None  # 가져갔으므로 일회성으로 삭제
+                signals["owner"] = None
             
             self.wfile.write(json.dumps(response).encode('utf-8'))
+        elif self.path.startswith("/api/get_frame"):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.end_headers()
+            
+            # 오디오 데이터를 넘겨주고 큐 비우기
+            response_data = {
+                "frame": latest_frame,
+                "audio": list(audio_queue)
+            }
+            audio_queue.clear()
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
         elif self.path.startswith("/api/reset"):
-            # 시그널링 리셋
             signals = {"owner": None, "dog": None, "candidates_to_owner": [], "candidates_to_dog": []}
             latest_sensors_data = ""
             esp_commands.clear()
+            latest_frame = ""
+            audio_queue.clear()
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"Reset success")
         else:
-            # 기본 정적 파일 서빙
             super().do_GET()
 
     def do_POST(self):
-        global signals, latest_sensors_data, esp_commands
+        global signals, latest_sensors_data, esp_commands, latest_frame, audio_queue
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
 
@@ -118,6 +137,24 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-Length', '2')
             self.send_header('Connection', 'close')
+            self.end_headers()
+            self.wfile.write(b"OK")
+            return
+
+        if self.path == "/api/post_frame":
+            try:
+                payload = json.loads(post_data.decode('utf-8'))
+                frame = payload.get("frame", "")
+                audio = payload.get("audio", [])
+                if frame:
+                    latest_frame = frame
+                if audio:
+                    audio_queue.extend(audio)
+            except Exception as e:
+                print("Error parsing post_frame payload:", e)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
             self.wfile.write(b"OK")
             return
