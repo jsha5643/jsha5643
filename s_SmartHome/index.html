@@ -1563,12 +1563,20 @@
         
         log("접속 프로토콜: " + window.location.protocol, "system");
         
-        // 모바일 기기 감지 (아이폰, 안드로이드 등 스마트폰이면 강아지 모드로 기본 기동)
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile) {
-            setDeviceRole('dog');
+        // URL 쿼리 파라미터에서 role 파라미터 확인 (?role=owner 또는 ?role=dog)
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryRole = urlParams.get('role');
+        
+        if (queryRole === 'owner' || queryRole === 'dog') {
+            setDeviceRole(queryRole);
         } else {
-            setDeviceRole('owner');
+            // 없을 경우 모바일 기기 감지 (스마트폰이면 강아지 모드로 기본 기동)
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                setDeviceRole('dog');
+            } else {
+                setDeviceRole('owner');
+            }
         }
 
         // 연결 해제 처리
