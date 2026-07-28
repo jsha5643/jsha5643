@@ -1587,6 +1587,14 @@
         
         log("접속 프로토콜: " + window.location.protocol, "system");
         
+        // 개선된 모바일 기기 자동 판정 로직 (UserAgent + 터치스크린 + 화면 너비 조합)
+        const isMobileDevice = () => {
+            const uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const isSmallScreen = window.innerWidth <= 768;
+            return uaMobile || (isTouch && isSmallScreen);
+        };
+
         // URL 쿼리 파라미터에서 role 파라미터 확인 (?role=owner 또는 ?role=dog)
         const urlParams = new URLSearchParams(window.location.search);
         const queryRole = urlParams.get('role');
@@ -1595,8 +1603,7 @@
             setDeviceRole(queryRole);
         } else {
             // 없을 경우 모바일 기기 감지 (스마트폰이면 강아지 모드로 기본 기동)
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            if (isMobile) {
+            if (isMobileDevice()) {
                 setDeviceRole('dog');
             } else {
                 setDeviceRole('owner');
