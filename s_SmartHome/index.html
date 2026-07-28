@@ -1081,15 +1081,26 @@
             log("카메라 미리 획득 시도...", "system");
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    log("카메라 API 미지원 브라우저입니다.", "danger");
+                    log("카메라 API 미지원 브라우저입니다. (보안주소인 HTTPS 혹은 모바일 Safari 앱 필수)", "danger");
                     return;
                 }
                 
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "user" },
-                    audio: true // 마이크 획득 추가
-                });
-                log("카메라 및 마이크 획득 성공!", "system");
+                try {
+                    // 1차 시도: 비디오 + 오디오(마이크) 획득
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "user" },
+                        audio: true
+                    });
+                    log("카메라 및 마이크 획득 성공!", "system");
+                } catch (audioErr) {
+                    log("마이크 권한 오류로 인해 비디오만 단독 획득을 시도합니다...", "warning");
+                    // 2차 시도: 오디오 없이 비디오(카메라)만 획득 (아이폰 권한 에러 우회)
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "user" },
+                        audio: false
+                    });
+                    log("카메라 단독 획득 성공!", "system");
+                }
                 
                 const miniPreview = document.getElementById('dog-mini-preview');
                 if (miniPreview) {
@@ -1098,7 +1109,8 @@
                 }
             } catch (err) {
                 console.error("Preemptive camera startup failed:", err);
-                log("카메라 획득 실패: " + err.message, "danger");
+                log(`카메라 획득 최종 실패: ${err.name} - ${err.message}`, "danger");
+                log("※ 해결책: 스마트폰 설정->Safari->카메라 권한을 '허용'해 주시거나, 주소가 HTTPS로 시작하는지 꼭 확인해 주세요.", "warning");
             }
         }
 
