@@ -486,7 +486,7 @@
         <!-- 와이파이 서버/터널 주소 입력 박스 -->
         <div style="width: 80%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
             <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-align: left;"><i class="fa-solid fa-link"></i> 와이파이 제어 서버 주소</label>
-            <input id="server-host-input" type="text" value="https://cuddly-ads-pick.loca.lt" placeholder="http://192.168.x.x:8000" style="padding: 12px; border-radius: 12px; border: none; box-shadow: var(--shadow-in); background: var(--bg-color); color: var(--text-color); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; outline: none; width: 100%;">
+            <input id="server-host-input" type="text" placeholder="http://192.168.x.x:8000" style="padding: 12px; border-radius: 12px; border: none; box-shadow: var(--shadow-in); background: var(--bg-color); color: var(--text-color); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; outline: none; width: 100%;">
         </div>
 
         <div style="display: flex; gap: 16px; margin-top: 10px; width: 80%; max-width: 320px;">
@@ -1033,6 +1033,11 @@
             window.location.hostname === '127.0.0.1' || 
             window.location.hostname.startsWith('192.168.')) {
             signalingHost = window.location.origin;
+        }
+        // 감지된 signalingHost를 입력상자에 기본값으로 동적 매핑
+        const hostInputEl = document.getElementById('server-host-input');
+        if (hostInputEl) {
+            hostInputEl.value = signalingHost;
         }
 
         // 펫캠 화면의 상태 메시지 및 연결 단계를 비디오 플레이스홀더에 직접 출력하는 헬퍼 함수
