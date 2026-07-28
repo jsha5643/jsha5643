@@ -15,7 +15,7 @@ cds.atten(ADC.ATTN_11DB)
 
 # 서보 모터 초기화 (Servo Pin 13)
 motor = Servo(pin=13)
-motor.move(90) # 90도 정렬 설정
+# motor.move(90) # 90도 정렬 설정 (실행 시 초기 움직임 방지를 위해 주석 처리)
 
 # 피에조 부저 초기화 (PWM Pin 23)
 piezo = PWM(Pin(23))
@@ -116,7 +116,7 @@ def trigger_feeding():
     global feed_seconds
     print("Feeding started...")
     motor.move(180) # 180도로 이동
-    sleep(5)        # 5초간 대기
+    sleep(1)        # 1초간 대기
     motor.move(90)  # 다시 원래대로(90도) 복귀
     
     # 급식 성공 알림음 연주
@@ -463,9 +463,9 @@ import json
 import network
 import urequests
 
-wifi_ssid = "YOUR_WIFI_SSID"
-wifi_password = "YOUR_WIFI_PASSWORD"
-server_ip = "192.168.0.4"
+wifi_ssid = "ICEE"
+wifi_password = "icee2026"
+server_ip = "192.168.0.17"
 
 try:
     with open("wifi_config.json", "r") as f:
@@ -473,6 +473,8 @@ try:
         wifi_ssid = config.get("ssid", wifi_ssid)
         wifi_password = config.get("password", wifi_password)
         server_ip = config.get("server_ip", server_ip)
+        print("성공")
+        
 except Exception as e:
     print("Could not load wifi_config.json, using defaults:", e)
 
@@ -553,14 +555,14 @@ def flush_buffer():
     data_to_send = "".join(p.buffer)
     p.buffer.clear()
     try:
-        res = urequests.post(server_url + "/api/esp/sensors", data=data_to_send)
+        res = urequests.post(server_url + "/api/esp/sensors", data=data_to_send, timeout=3)
         res.close()
     except Exception as e:
         print("Failed to send sensors:", e)
 
 def poll_commands():
     try:
-        res = urequests.get(server_url + "/api/esp/commands")
+        res = urequests.get(server_url + "/api/esp/commands", timeout=3)
         if res.status_code == 200:
             commands = res.json()
             res.close()
@@ -771,9 +773,12 @@ while True:
                 d.measure()
                 temp_val = d.temperature()
                 humi_val = d.humidity()
+                cds_val = cds.read()
                 
                 p.send("temp : " + str(temp_val) + "\n")
                 p.send("humi : " + str(humi_val) + "\n")
+                p.send(str(cds_val) + "\n")
+                p.send("feed_countdown:{}\n".format(feed_seconds))
             except Exception as e:
                 print("DHT11 sensor read failed:", e)
 
@@ -782,10 +787,13 @@ while True:
         
         if is_abnormal:
             p.send("env_alert:1\n")
-            piezo.duty_u16(1000)
-            piezo.freq(880)
-            sleep(0.1)
-            piezo.duty_u16(0)
+            # "삐삐" 경고음 (Double Beep)
+            for _ in range(2):
+                piezo.duty_u16(1000)
+                piezo.freq(880)
+                sleep(0.08)
+                piezo.duty_u16(0)
+                sleep(0.08)
         else:
             p.send("env_alert:0\n")
 
