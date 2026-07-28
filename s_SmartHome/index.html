@@ -597,7 +597,8 @@
                         <span class="sensor-label">실내 습도</span>
                         <div id="val-humi" class="sensor-value">--<span>%</span></div>
                     </div>
-                    <div class="sensor-item full-width">
+                    <!-- 조도 카드 숨김 처리 -->
+                    <div class="sensor-item full-width" style="display: none;">
                         <i class="fa-solid fa-sun sensor-icon" style="color: #eab308;"></i>
                         <span class="sensor-label">주변 밝기 (조도)</span>
                         <div id="val-cds" class="sensor-value">--<span>Lux</span></div>
@@ -605,10 +606,11 @@
                 </div>
             </div>
 
-            <!-- 자동 급식기 타이머 카드 -->
+            <!-- 자동 급식기 타이머 카드 (조절하여 타이머 영역은 숨기고 급식 버튼만 배치) -->
             <div class="card">
                 <div class="card-title">자동 급식기 제어</div>
-                <div class="feeding-panel">
+                <!-- 타이머 영역 숨김 처리 -->
+                <div class="feeding-panel" style="display: none;">
                     <div class="timer-label"><i class="fa-regular fa-clock"></i> 다음 자동 급식까지</div>
                     <div id="val-timer" class="timer-display">--:--:--</div>
                 </div>
@@ -995,7 +997,13 @@
                 try {
                     const encoder = new TextEncoder('utf-8');
                     const data = encoder.encode(cmdStr);
-                    await rxCharacteristic.writeValue(data);
+                    
+                    // 응답을 대기하지 않는 writeValueWithoutResponse를 우선 사용하여 터치 지연(렉)을 완전히 해결
+                    if (rxCharacteristic.properties.writeWithoutResponse) {
+                        await rxCharacteristic.writeValueWithoutResponse(data);
+                    } else {
+                        await rxCharacteristic.writeValue(data);
+                    }
                     log(`송신(BLE) ➔ ${cmdStr}`, 'tx');
                 } catch (error) {
                     log(`송신 실패: ${error.message}`, 'system');
@@ -1667,41 +1675,40 @@
         connectWifiBtn.addEventListener('click', connectWiFi);
         document.getElementById('disconnect-btn-main').addEventListener('click', disconnect);
 
-        // 1. 센서 리프레시 버튼
-        document.getElementById('btn-refresh-sensors').addEventListener('click', () => {
-            sendCommand('1'); // 온습도 요청
-            setTimeout(() => sendCommand('2'), 300); // 조도 요청
+        // 1. 센서 리프레시 버튼 (조도 카드가 사라졌으므로 온습도만 즉시 요청)
+        document.getElementById('btn-refresh-sensors').addEventListener('pointerdown', () => {
+            sendCommand('1'); 
         });
-
-        // 2. 급식 버튼
-        document.getElementById('btn-feed-now').addEventListener('click', () => sendCommand('a'));
-
+ 
+        // 2. 급식 버튼 (300ms 터치 지연을 없애기 위해 pointerdown 이벤트로 적용)
+        document.getElementById('btn-feed-now').addEventListener('pointerdown', () => sendCommand('a'));
+ 
         // 3. 조명 버튼
-        document.getElementById('btn-light-auto').addEventListener('click', (e) => {
+        document.getElementById('btn-light-auto').addEventListener('pointerdown', (e) => {
             sendCommand('b');
             e.currentTarget.classList.toggle('active');
         });
-        document.getElementById('btn-light-on').addEventListener('click', () => {
+        document.getElementById('btn-light-on').addEventListener('pointerdown', () => {
             sendCommand('7');
             document.getElementById('btn-light-auto').classList.remove('active');
         });
-        document.getElementById('btn-light-off').addEventListener('click', () => {
+        document.getElementById('btn-light-off').addEventListener('pointerdown', () => {
             sendCommand('8');
             document.getElementById('btn-light-auto').classList.remove('active');
         });
-
+ 
         // 4. 기타 컴포넌트 제어
-        document.getElementById('btn-lcd-on').addEventListener('click', () => sendCommand('3'));
-        document.getElementById('btn-lcd-off').addEventListener('click', () => sendCommand('4'));
-        document.getElementById('btn-melody-1').addEventListener('click', () => sendCommand('5'));
-        document.getElementById('btn-melody-2').addEventListener('click', () => sendCommand('6'));
-        document.getElementById('btn-oled-img').addEventListener('click', () => sendCommand('9'));
-
+        document.getElementById('btn-lcd-on').addEventListener('pointerdown', () => sendCommand('3'));
+        document.getElementById('btn-lcd-off').addEventListener('pointerdown', () => sendCommand('4'));
+        document.getElementById('btn-melody-1').addEventListener('pointerdown', () => sendCommand('5'));
+        document.getElementById('btn-melody-2').addEventListener('pointerdown', () => sendCommand('6'));
+        document.getElementById('btn-oled-img').addEventListener('pointerdown', () => sendCommand('9'));
+ 
         // 5. 놀이기구 제어
-        document.getElementById('btn-play-1').addEventListener('click', () => sendCommand('c'));
-        document.getElementById('btn-play-2').addEventListener('click', () => sendCommand('d'));
-        document.getElementById('btn-play-3').addEventListener('click', () => sendCommand('e'));
-        document.getElementById('btn-play-4').addEventListener('click', () => sendCommand('f'));
+        document.getElementById('btn-play-1').addEventListener('pointerdown', () => sendCommand('c'));
+        document.getElementById('btn-play-2').addEventListener('pointerdown', () => sendCommand('d'));
+        document.getElementById('btn-play-3').addEventListener('pointerdown', () => sendCommand('e'));
+        document.getElementById('btn-play-4').addEventListener('pointerdown', () => sendCommand('f'));
 
     </script>
 </body>
