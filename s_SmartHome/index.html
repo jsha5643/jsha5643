@@ -1128,7 +1128,7 @@
 
             dogRelayInterval = setInterval(async () => {
                 const videoEl = video || document.getElementById('dog-mini-preview');
-                if (!localStream || !videoEl || videoEl.readyState < 2) return;
+                if (!localStream || !videoEl) return;
                 
                 try {
                     relayCanvas.width = 320;
