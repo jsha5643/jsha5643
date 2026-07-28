@@ -21,7 +21,7 @@ class SignalingHTTPServer(http.server.SimpleHTTPRequestHandler):
         # CORS 허용 설정 (모바일 접속 및 다중 기기 연동 활성화)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Bypass-Tunnel-Reminder')
         super().end_headers()
 
     def do_OPTIONS(self):
