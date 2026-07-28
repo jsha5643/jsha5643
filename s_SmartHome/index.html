@@ -853,18 +853,27 @@
             }
         }
 
+        let bleBuffer = ""; // BLE 패킷 조각 누적 버퍼
+        
         // BLE 수신 패킷 처리 함수
         function handleBLENotifications(event) {
             const value = event.target.value;
             const decoder = new TextDecoder('utf-8');
-            const dataStr = decoder.decode(value).trim();
+            const dataStr = decoder.decode(value);
+            
             if (dataStr) {
-                const lines = dataStr.split('\n');
-                lines.forEach(line => {
-                    if (line.trim()) {
-                        handleWiFiNotifications(line.trim());
+                bleBuffer += dataStr; // 들어온 조각 누적
+                
+                // 개행 문자가 존재하면 완성된 라인만 잘라내어 파싱
+                while (bleBuffer.includes('\n')) {
+                    const idx = bleBuffer.indexOf('\n');
+                    const line = bleBuffer.substring(0, idx).trim();
+                    bleBuffer = bleBuffer.substring(idx + 1);
+                    
+                    if (line) {
+                        handleWiFiNotifications(line);
                     }
-                });
+                }
             }
         }
 
