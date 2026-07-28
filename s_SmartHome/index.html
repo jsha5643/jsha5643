@@ -482,7 +482,14 @@
         </div>
         <div class="overlay-title">준석의 스마트홈</div>
         <div class="overlay-desc">연동 방식을 선택해 주세요. 스마트폰은 블루투스, 노트북은 와이파이 연동을 권장합니다.</div>
-        <div style="display: flex; gap: 16px; margin-top: 10px;">
+        
+        <!-- 와이파이 서버/터널 주소 입력 박스 -->
+        <div style="width: 80%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-align: left;"><i class="fa-solid fa-link"></i> 와이파이 제어 서버 주소</label>
+            <input id="server-host-input" type="text" value="https://cuddly-ads-pick.loca.lt" placeholder="http://192.168.x.x:8000" style="padding: 12px; border-radius: 12px; border: none; box-shadow: var(--shadow-in); background: var(--bg-color); color: var(--text-color); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; outline: none; width: 100%;">
+        </div>
+
+        <div style="display: flex; gap: 16px; margin-top: 10px; width: 80%; max-width: 320px;">
             <button id="connect-ble-btn" class="btn btn-primary" style="padding: 16px 20px; border-radius: 20px; font-size: 1rem; flex: 1;">
                 <i class="fa-solid fa-bluetooth"></i> 블루투스 연결
             </button>
@@ -862,7 +869,11 @@
         }
 
         async function connectWiFi() {
-            log('와이파이 제어 서버에 연결하는 중...', 'system');
+            const hostInput = document.getElementById('server-host-input').value.trim();
+            if (hostInput) {
+                signalingHost = hostInput;
+            }
+            log('와이파이 제어 서버에 연결하는 중... 호스트: ' + signalingHost, 'system');
             try {
                 // 서버에 테스트 요청을 날려 상태를 체크합니다 (캐시 방지 타임스탬프 추가)
                 const res = await fetch(`${signalingHost}/api/web/sensors?t=${Date.now()}`, {
@@ -1017,7 +1028,7 @@
         }
 
         // 화상 통화 (WebRTC 대신 HTTP 릴레이) 및 실시간 펫캠 기능 구현
-        let signalingHost = "https://great-lines-attack.loca.lt";
+        let signalingHost = "https://cuddly-ads-pick.loca.lt";
         if (window.location.hostname === 'localhost' || 
             window.location.hostname === '127.0.0.1' || 
             window.location.hostname.startsWith('192.168.')) {
